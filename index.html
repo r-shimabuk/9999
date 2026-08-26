@@ -669,7 +669,7 @@ function finalizeRoll(p){
   const collectorBonus = (p.collectorLevel||0) * Math.floor((p.totalItemsOwned||0)/2);
   rawTotal += collectorBonus;
   rawTotal += (p.flatRollBonus||0);
-  const comboMult = 1 + Math.min(p.comboCount||0, 100) * 0.15; // コンボが続くほど爆発的に増える（最大+15.0倍）
+  const comboMult = 1 + Math.min(p.comboCount||0, 60) * 0.03; // 振り続けるほど一時的に伸びる（最大+1.8倍＝合計2.8倍）。オークション参加でリセット
   const total = Math.round(rawTotal * (p.multiplierFactor||1) * comboMult);
   p.lastRollTotal = total;
 
@@ -680,18 +680,16 @@ function finalizeRoll(p){
   if(total > state.lastGlobalMaxRoll){
     state.lastGlobalMaxRoll = total;
     triggerChain('luck', p);
-    p.comboCount = (p.comboCount||0) + 1;
-    if(p.comboCount>=2){
-      if(p.isHuman) sfxCombo(p.comboCount);
-      addLog(`${p.name} が COMBO x${p.comboCount}！（出目×${comboMult.toFixed(2)}）`, 'win');
-      if(p.comboCount % 3 === 0){
-        const bonus = p.comboCount * 5;
-        p.coins += bonus;
-        addLog(`COMBO x${p.comboCount} ボーナス！${p.name}に+${bonus}コイン`, 'win');
-      }
+  }
+  p.comboCount = (p.comboCount||0) + 1; // ロールし続ける限り伸びる（ショップに参加すると0にリセット）
+  if(p.comboCount>=5 && p.comboCount % 5 === 0){
+    if(p.isHuman) sfxCombo(p.comboCount);
+    addLog(`${p.name} が COMBO x${p.comboCount}！（出目×${comboMult.toFixed(2)}）`, 'win');
+    if(p.comboCount % 10 === 0){
+      const bonus = p.comboCount * 3;
+      p.coins += bonus;
+      addLog(`COMBO x${p.comboCount} ボーナス！${p.name}に+${bonus}コイン`, 'win');
     }
-  } else {
-    p.comboCount = 0;
   }
   const bonusTxt = ((p.multiplierFactor||1)>1||comboMult>1) ? `（${rawTotal}→×${((p.multiplierFactor||1)*comboMult).toFixed(2)}）` : '';
   addLog(`${p.name} が [${rolls.join(',')}] で合計+${total}${bonusTxt}（進捗${p.progress}）`);
@@ -883,7 +881,9 @@ function startAuction(p, slotIdx){
   const price = Math.round(basePrice * MULT_SEQ[0]);
   if(p.coins < price) { addLog(`${p.name} はコインが足りず入札できなかった。`); if(p.isHuman) sfxFail(); return; }
   state.shop.auctions[slotIdx] = { bidder: p.id, tier: 0, basePrice, deadline: Date.now()+AUCTION_MS };
-  addLog(`${p.name} が「${item.name}」に${price}コインで入札！誰か競る？（5秒）`);
+  if(p.comboCount>0){ addLog(`${p.name} のCOMBOが途切れた（ショップに参加）`); }
+  p.comboCount = 0; // オークションに参加するとコンボの勢いが途切れる
+  addLog(`${p.name} が「${item.name}」に${price}コインで入札！誰か競る？（${AUCTION_MS/1000}秒）`);
   if(p.isHuman) sfxBidStart();
   renderScroll();
 }
@@ -900,6 +900,7 @@ function raiseAuction(p, slotIdx, targetTier){
   auc.bidder = p.id;
   auc.tier = tier;
   auc.deadline = Date.now()+AUCTION_MS;
+  p.comboCount = 0; // 競り上げに参加するとコンボの勢いが途切れる
   addLog(`${p.name} が${MULT_SEQ[tier]}倍（${price}コイン）で競り上げた！`);
   if(p.isHuman) sfxBidRaise(tier);
   renderScroll();
@@ -1386,7 +1387,7 @@ function renderBadges(p, now){
   }
   if(p.effects.comboSetAComplete) b+=`<span class="badge combo-badge">欠片コンプ！×10</span>`;
   if(p.collectorLevel>0) b+=`<span class="badge">収集の力+${(p.collectorLevel||0)*Math.floor((p.totalItemsOwned||0)/3)}（所持${p.totalItemsOwned||0}）</span>`;
-  if(p.comboCount>=2) b+=`<span class="badge combo-badge">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,100)*0.15).toFixed(2)}）</span>`;
+  if(p.comboCount>=2) b+=`<span class="badge combo-badge">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,60)*0.03).toFixed(2)}）</span>`;
   if(p.interestRate>0) b+=`<span class="badge">利息${(p.interestRate*100).toFixed(1)}%</span>`;
   if(p.insuranceBonus>0) b+=`<span class="badge buff">保険+${p.insuranceBonus}</span>`;
   if(p.effects.scoutPermanent) b+=`<span class="badge buff">偵察</span>`;
