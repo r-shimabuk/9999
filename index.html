@@ -93,7 +93,10 @@ html,body{
 .opp-card.leader{border-width:2.5px;}
 .opp-name{font-size:9px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;}
 .opp-personality{font-size:7px;color:var(--sub);margin-bottom:3px;}
-.opp-die{width:20px;height:20px;border-radius:5px;background:transparent;border:1.5px solid;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:11px;margin-bottom:2px;}
+.opp-die-row{display:flex;align-items:center;gap:3px;margin-bottom:2px;flex-wrap:wrap;}
+.opp-die{width:20px;height:20px;border-radius:5px;background:transparent;border:1.5px solid;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:11px;flex-shrink:0;}
+.item-dots{display:flex;flex-wrap:wrap;gap:2px;max-width:44px;}
+.item-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
 .opp-bar{height:5px;border-radius:3px;background:rgba(0,0,0,0.06);overflow:hidden;margin-bottom:3px;}
 .opp-bar-fill{height:100%;}
 .opp-score{font-size:8px;color:var(--sub);font-family:'Share Tech Mono',monospace;}
@@ -213,7 +216,8 @@ html,body{
 .badge{font-size:8px;background:transparent;border:1.5px solid var(--sub);border-radius:5px;padding:2px 5px;color:var(--sub);font-weight:700;}
 .badge.buff{border-color:var(--c-buff);color:var(--c-buff);}
 .badge.debuff{border-color:var(--c-debuff);color:var(--c-debuff);}
-.badge.combo-badge{border-color:var(--orange);color:var(--orange);font-weight:900;animation:comboBadgePulse .5s ease-in-out infinite alternate;}
+.badge.combo-badge{border-color:var(--sub);color:var(--sub);font-weight:900;}
+.badge.combo-badge.active{border-color:var(--orange);color:var(--orange);animation:comboBadgePulse .5s ease-in-out infinite alternate;}
 @keyframes comboBadgePulse{0%{transform:scale(1);}100%{transform:scale(1.08);}}
 
 /* target modal */
@@ -1164,12 +1168,16 @@ function renderScroll(){
     const rank = getRank(p);
     let auraTotal = 0;
     if(human.effects.scoutPermanent && p.auraProc){ auraTotal = Object.values(p.auraProc).reduce((s,v)=>s+v,0); }
+    const itemDots = (p.inventory||[]).slice(-14).map(it=>`<span class="item-dot" style="background:${RARITY[it.rarity].color}"></span>`).join('');
     html += `<div class="opp-card ${isLeader?'leader':''}" style="border-color:${oc}">
       <div class="rank-badge" style="border-color:${oc};color:${oc}">${rank}位</div>
       ${p.bubble && now<p.bubbleUntil ? `<div class="bubble">${p.bubble}</div>` : ''}
       <div class="opp-name" style="color:${oc}">${p.name}</div>
       <div class="opp-personality">${PERSONALITY_LABEL[p.personality]||''}</div>
-      <div class="opp-die mono ${p.rollAnim.active?'spin':''}" id="oppDie-${p.id}" style="border-color:${oc};color:${oc}">${p.rollAnim.active ? p.rollAnim.disp : '●'}</div>
+      <div class="opp-die-row">
+        <div class="opp-die mono ${p.rollAnim.active?'spin':''}" id="oppDie-${p.id}" style="border-color:${oc};color:${oc}">${p.rollAnim.active ? p.rollAnim.disp : '●'}</div>
+        <div class="item-dots">${itemDots}</div>
+      </div>
       <div class="opp-bar"><div class="opp-bar-fill" style="width:${Math.min(100,p.progress/GOAL*100)}%;background:${oc}"></div></div>
       <div class="opp-score mono">${fmt(p.progress)}${human.effects.seeCoinsPermanent?` ／ ${p.coins}C`:''}</div>
       ${auraTotal>0 ? `<div class="opp-score mono">オーラ計${Math.round(auraTotal*100)}%</div>` : ''}
@@ -1388,9 +1396,13 @@ function renderBadges(p, now){
     const got = ['a1','a2','a3'].filter(k=>p.comboPieces[k]).length;
     b+=`<span class="badge">欠片${got}/3</span>`;
   }
-  if(p.effects.comboSetAComplete) b+=`<span class="badge combo-badge">欠片コンプ！×10</span>`;
+  if(p.effects.comboSetAComplete) b+=`<span class="badge combo-badge active">欠片コンプ！×10</span>`;
   if(p.collectorLevel>0) b+=`<span class="badge">収集の力+${(p.collectorLevel||0)*Math.floor((p.totalItemsOwned||0)/3)}（所持${p.totalItemsOwned||0}）</span>`;
-  if(p.comboCount>=2) b+=`<span class="badge combo-badge">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,60)*0.03).toFixed(2)}）</span>`;
+  if(p.comboCount>=2){
+    b+=`<span class="badge combo-badge active">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,60)*0.03).toFixed(2)}）</span>`;
+  } else {
+    b+=`<span class="badge combo-badge">COMBO</span>`;
+  }
   if(p.interestRate>0) b+=`<span class="badge">利息${(p.interestRate*100).toFixed(1)}%</span>`;
   if(p.insuranceBonus>0) b+=`<span class="badge buff">保険+${p.insuranceBonus}</span>`;
   if(p.effects.scoutPermanent) b+=`<span class="badge buff">偵察</span>`;
