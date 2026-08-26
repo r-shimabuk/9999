@@ -321,7 +321,6 @@ function noiseClank(dur, freq, q, vol, delay){
 function click(freq, dur, vol, delay){
   beep(freq, dur||0.035, 'square', vol||0.12, delay||0);
 }
-function sfxRollTick(){ click(700+Math.random()*300, 0.02, 0.06); }
 function sfxCoinCascade(count){
   const n = Math.max(1, Math.min(count, 10));
   for(let i=0;i<n;i++){ click(900, 0.02, 0.08, i*0.05); }
@@ -727,7 +726,6 @@ setInterval(()=>{
         finalizeRoll(p);
       } else {
         p.rollAnim.disp = 1+Math.floor(Math.random()*9);
-        sfxRollTick();
       }
     }
   }
