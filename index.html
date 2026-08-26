@@ -235,7 +235,8 @@ html,body{
 .start-title{font-family:'Share Tech Mono',monospace;font-size:52px;letter-spacing:6px;margin:0;color:var(--blue);font-weight:900;}
 .start-sub{font-size:11px;letter-spacing:4px;color:var(--sub);margin-bottom:10px;}
 .start-desc{font-size:12px;color:var(--ink);line-height:1.7;max-width:280px;margin:0 0 14px;}
-.start-btn{padding:16px 36px;border:1.5px solid var(--orange);border-radius:14px;background:transparent;color:var(--orange);font-weight:900;font-size:16px;letter-spacing:2px;cursor:pointer;}
+.start-btn{padding:16px 36px;border:1.5px solid var(--orange);border-radius:14px;background:transparent;color:var(--orange);font-weight:900;font-size:16px;letter-spacing:2px;cursor:pointer;margin-bottom:8px;}
+.start-note{font-size:9px;color:var(--sub);margin-top:6px;}
 .start-btn:active{transform:scale(0.97);}
 </style>
 </head>
@@ -539,6 +540,33 @@ function addLog(text, cls){
   renderScroll(); // scrollArea only — never touches the self/roll button DOM
 }
 
+// ---------- オートセーブ（自分のブラウザ内に保存。Claude.aiのプレビュー内では動作しない場合があります） ----------
+const SAVE_KEY = 'game9999_autosave_v1';
+function saveGame(){
+  if(!state.running || state.winner) return;
+  try{
+    const payload = {
+      players: state.players,
+      lastGlobalMaxRoll: state.lastGlobalMaxRoll,
+      ts: Date.now(),
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+  }catch(e){ /* ストレージが使えない環境では何もしない */ }
+}
+function loadSavedGame(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    const data = JSON.parse(raw);
+    if(!data || !Array.isArray(data.players)) return null;
+    return data;
+  }catch(e){ return null; }
+}
+function clearSavedGame(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+}
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') saveGame(); });
+
 function initGame(){
   state.players = [
     newPlayer(0, NAMES[0], true),
@@ -669,6 +697,7 @@ function finalizeRoll(p){
   if(newLeader.id !== lastLeaderId){ if(lastLeaderId!==null && p.isHuman) sfxLeaderChange(); lastLeaderId = newLeader.id; }
   if(p.progress >= GOAL){
     state.winner = p;
+    clearSavedGame();
     addLog(`${p.name} が 9999 に到達！勝利！`, 'win');
     if(p.isHuman) sfxWin();
     renderWin();
@@ -966,6 +995,10 @@ function applyEffect(p, item){
 setInterval(()=>{
   if(!state.running || state.winner) return;
   const now = Date.now();
+  if(now >= (state.nextAutoSaveAt||0)){
+    saveGame();
+    state.nextAutoSaveAt = now + 4000;
+  }
   if(!state.shop.warned && state.shop.nextRestock - now <= 5000 && state.shop.nextRestock - now > 4700){
     addLog('まもなく棚が一斉に補充されるぞ！');
     state.shop.warned = true;
@@ -1091,7 +1124,7 @@ function buildSkeleton(){
         <div class="self-info">
           <div class="self-name" id="selfName">あなた</div>
           <div class="progress-wrap"><div class="progress-fill" id="selfProgFill" style="width:0%"></div><div class="progress-label mono" id="selfProgLabel">0000 / 9999</div></div>
-          <div class="stat-row"><span>コイン: <b class="mono" id="selfCoins">0</b></span><span>ダイス範囲: <b class="mono" id="selfRange">1-6</b></span><span>ボーナス: <b class="mono" id="selfBonus">+0</b></span></div>
+          <div class="stat-row"><span>コイン: <b class="mono" id="selfCoins">0</b></span><span>ダイス範囲: <b class="mono" id="selfRange">1-6</b></span><span>ボーナス: <b class="mono" id="selfBonus">+0</b></span><span>倍率: <b class="mono" id="selfMult">×1.00</b></span></div>
         </div>
       </div>
       <button class="roll-btn" id="rollBtn">サイコロを振る</button>
@@ -1248,6 +1281,8 @@ function updateSelfLive(){
   if(rangeEl){ const r = diceRange(human); rangeEl.textContent = r.min+'-'+r.max; }
   const bonusEl = document.getElementById('selfBonus');
   if(bonusEl){ bonusEl.textContent = '+'+(human.flatRollBonus||0); }
+  const multEl = document.getElementById('selfMult');
+  if(multEl){ multEl.textContent = '×'+(human.multiplierFactor||1).toFixed(2); }
 
   const btn = document.getElementById('rollBtn');
   const cdFill = document.getElementById('cdFill');
@@ -1455,15 +1490,36 @@ function uiReset(){
   state.running = false;
   renderStartScreen();
 }
-function uiStart(){ ensureAudio(); initGame(); }
+function uiStart(){ ensureAudio(); clearSavedGame(); initGame(); }
+function uiResume(){
+  ensureAudio();
+  const saved = loadSavedGame();
+  if(!saved){ initGame(); return; }
+  initGame(); // まず通常初期化（棚・チェインなどは新品にする）
+  // プレイヤーの進行状況だけセーブデータから復元
+  state.players = saved.players.map((sp, idx)=>{
+    const fresh = state.players[idx];
+    return Object.assign(fresh, sp, {
+      rollAnim:{active:false, endsAt:0, startedAt:0, dur:0, disp:1},
+      busyUntil:0, aiTimer:0, bubble:null, bubbleUntil:0,
+    });
+  });
+  state.lastGlobalMaxRoll = saved.lastGlobalMaxRoll||0;
+  lastLeaderId = null; lastSelfRank = null;
+  updateSelfLive();
+  addLog('セーブデータから再開しました。');
+}
 
 function renderStartScreen(){
+  const saved = loadSavedGame();
   document.getElementById('app').innerHTML = `
     <div class="start-screen">
       <h1 class="start-title">9999</h1>
       <div class="start-sub">DICE RACE &amp; SHOP</div>
       <p class="start-desc">4人でサイコロを振り合い、最初に9999に到達したプレイヤーの勝ち。<br>ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
-      <button class="start-btn" onclick="uiStart()">ゲームスタート</button>
+      ${saved ? `<button class="start-btn" onclick="uiResume()">続きから再開</button>` : ''}
+      <button class="start-btn" onclick="uiStart()">${saved?'最初から始める（新規）':'ゲームスタート'}</button>
+      <div class="start-note">※ 進行状況は数秒おきに自動保存されます（このブラウザ内のみ）</div>
     </div>
   `;
 }
