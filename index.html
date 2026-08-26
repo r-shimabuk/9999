@@ -45,9 +45,10 @@ html,body{
 #app{
   height:100dvh; height:100vh;
   max-width:480px;margin:0 auto;
-  display:flex;flex-direction:column;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
   padding:3px 3px 0;
-  gap:2px;
+  row-gap:2px;
   overflow:hidden;
 }
 
@@ -56,7 +57,10 @@ html,body{
 .title h1{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:2px;margin:0;color:var(--blue);font-weight:900;}
 .title .reset{font-size:9px;color:var(--red);background:none;border:1.5px solid var(--red);border-radius:6px;padding:3px 8px;cursor:pointer;font-weight:700;}
 
-/* scroll area: the ONLY thing that scrolls */
+/* middleWrap: 中央の可変エリア（SHOP等＋ITEMS）。この行の高さは常に「画面残り分」に固定される */
+#middleWrap{min-height:0;display:flex;flex-direction:column;gap:2px;overflow:hidden;}
+
+/* scroll area: 相手/チェイン/ショップ。中身が多いときはここだけ内側スクロール */
 #scrollArea{flex:5 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
 #invPanel{flex:1 1 0;min-height:22px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
 #invPanel h2{color:var(--role-self);}
@@ -987,11 +991,13 @@ function buildSkeleton(){
       <h1>9999</h1>
       <button class="reset" onclick="uiReset()">RESET</button>
     </div>
-    <div id="scrollArea"></div>
-    <div id="invPanel" class="panel">
-      <h2>ITEMS ／ 所持アイテム</h2>
-      <div class="inventory-row" id="invRow"><span class="inv-empty">まだアイテムを持っていません</span></div>
-      <div class="inv-tip" id="invTip"></div>
+    <div id="middleWrap">
+      <div id="scrollArea"></div>
+      <div id="invPanel" class="panel">
+        <h2>ITEMS ／ 所持アイテム</h2>
+        <div class="inventory-row" id="invRow"><span class="inv-empty">まだアイテムを持っていません</span></div>
+        <div class="inv-tip" id="invTip"></div>
+      </div>
     </div>
     <div id="selfPanel">
       <div class="self-row">
