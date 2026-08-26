@@ -417,7 +417,8 @@ const ITEMS = [
   {id:53, name:'目替えダイス強化版', desc:'出目の範囲+2〜+2（永続・重ね掛け可）', price:80, rarity:'epic', type:'shiftRange2'},
   {id:7, name:'コインブースト', desc:'ロールごとに+1コイン（永続）', price:6, rarity:'common', type:'coinBoost'},
   {id:8, name:'値引き体質', desc:'ショップ価格-5%（永続、上限-50%）', price:8, rarity:'common', type:'priceDiscount'},
-  {id:9, name:'高速回転', desc:'回転時間を短縮（永続）', price:24, rarity:'rare', type:'spinReduce'},
+  {id:9, name:'高速回転', desc:'回転時間（クールタイム）を短縮（永続・重要）', price:24, rarity:'rare', type:'spinReduce'},
+  {id:60, name:'超高速回転', desc:'回転時間（クールタイム）を大きく短縮（永続・重要）', price:90, rarity:'epic', type:'spinReduce2'},
   // 防御系（永続）
   {id:10, name:'妨害耐性', desc:'受ける妨害の持続-15%（上限-75%）', price:30, rarity:'rare', type:'debuffResist'},
   {id:11, name:'経済耐性', desc:'受ける割高効果-20%（上限-80%）', price:9, rarity:'common', type:'econResist'},
@@ -452,7 +453,7 @@ const SHOP_RESTOCK_MS = 18000;
 const MULT_SEQ = [1, 1.5, 2, 3, 4, 5, 6, 8, 10]; // オークションの倍率ステップ（上限10倍）
 const AUCTION_MS = 5000;
 const CHAIN_MS_DEFAULT = 5000;
-const ROLL_ANIM_MS = 550; // この回転時間そのものがクールタイムになる（高速化）
+const ROLL_ANIM_MS = 1100; // この回転時間そのものがクールタイムになる（初期は長め）
 
 function diceUpgradeCost(currentCount){
   return 8 * Math.pow(4, currentCount-1); // 1個目:8 / 2個目:32 / 3個目:128 / 4個目:512 / 5個目:2048 ...
@@ -593,7 +594,7 @@ function requestRoll(p){
     addLog(`${p.name} はゲージ凍結中で振れない。`);
     return;
   }
-  const rawDur = ROLL_ANIM_MS + Math.random()*200;
+  const rawDur = ROLL_ANIM_MS + Math.random()*400;
   const dur = Math.max(180, rawDur - (p.spinReduction||0));
   p.rollAnim = {active:true, startedAt: now, endsAt: now+dur, dur, disp: 1+Math.floor(Math.random()*9)};
   p.busyUntil = now + dur;
@@ -909,7 +910,8 @@ function applyEffect(p, item){
     case 'shiftRange2': p.minBonus += 2; p.maxBonus += 2; break;
     case 'coinBoost': p.coinBonusPerRoll = (p.coinBonusPerRoll||0) + 1; break;
     case 'priceDiscount': p.priceDiscount = Math.min(0.5, (p.priceDiscount||0) + 0.05); break;
-    case 'spinReduce': p.spinReduction = Math.min(900, (p.spinReduction||0) + 300); break;
+    case 'spinReduce': p.spinReduction = Math.min(1500, (p.spinReduction||0) + 350); break;
+    case 'spinReduce2': p.spinReduction = Math.min(1500, (p.spinReduction||0) + 650); break;
     case 'debuffResist': p.debuffResist = Math.min(0.75, (p.debuffResist||0) + 0.15); break;
     case 'econResist': p.econResist = Math.min(0.8, (p.econResist||0) + 0.2); break;
     case 'immuneStealPerm': p.effects.immuneStealPermanent = true; break;
