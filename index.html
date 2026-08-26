@@ -478,7 +478,12 @@ function weightedItemPick(progress){
   const allowed = unlockedRarities(progress);
   const w = {common:5, rare:3, epic:2, legend:1};
   const pool = [];
-  for(const it of ITEMS){ if(allowed.includes(it.rarity)){ for(let i=0;i<w[it.rarity];i++) pool.push(it); } }
+  for(const it of ITEMS){
+    if(!allowed.includes(it.rarity)) continue;
+    let weight = w[it.rarity];
+    if(it.type==='flatBonus') weight *= 3; // 出目+系はクリアの生命線なので出現率アップ
+    for(let i=0;i<weight;i++) pool.push(it);
+  }
   return pool[Math.floor(Math.random()*pool.length)];
 }
 
@@ -822,7 +827,8 @@ function priceFor(p, item){
   else price = item.price;
   if(item.type!=='addDice' && item.type!=='addDice2' && item.type!=='addDice3' && item.type!=='addDice5'){
     const cnt = p.purchaseCount[item.type] || 0;
-    price = Math.round(price * Math.pow(1.55, cnt)); // 同じ種類を買うほど値上がり
+    const rate = item.type==='flatBonus' ? 1.35 : 1.55; // 出目+系は重ね買いしても値上がりを緩やかに
+    price = Math.round(price * Math.pow(rate, cnt));
   }
   if(p.effects.priceUpUntil && p.effects.priceUpUntil>Date.now()){
     price = Math.round(price * (1 + 0.3*(1-(p.econResist||0))));
