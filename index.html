@@ -278,6 +278,7 @@ document.addEventListener('pointerdown', function(e){
   const slot = parseInt(btn.dataset.slot, 10);
   if(action==='buy'){ uiBuy(slot); }
   else if(action==='raise'){ uiRaiseTo(slot, parseInt(btn.dataset.tier,10)); }
+  else if(action==='reset'){ uiReset(); }
 }, {passive:false});
 
 // ---------- 実音源（アップロードされたmp3）----------
@@ -635,11 +636,26 @@ function getRank(p){
   const sorted = [...state.players].sort((a,b)=>b.progress-a.progress);
   return sorted.findIndex(x=>x.id===p.id) + 1;
 }
+// スリップストリームの威力：下位（4位）ほど強く、1位が9999に近いほど全体的に強化される
+function slipstreamPower(p){
+  const rank = getRank(p);
+  const rankFactor = {1:0, 2:1.0, 3:1.6, 4:2.3}[rank] || 1.0;
+  const leader = getLeader();
+  const proximity = 1 + Math.min(1, leader.progress/GOAL) * 2.5; // 終盤ほど強力（最大3.5倍）
+  return rankFactor * proximity;
+}
 
 function rollOne(p){
   const {min,max} = diceRange(p);
   let base = min + Math.floor(Math.random()*(max-min+1));
-  if(chainLuckActive(p) && Math.random()<0.5){ base = Math.min(max, base+1); }
+  if(chainLuckActive(p)){
+    const power = slipstreamPower(p);
+    const chance = Math.min(0.92, 0.3 * power);
+    if(Math.random() < chance){
+      const bonus = Math.max(1, Math.round(power));
+      base = Math.min(max, base + bonus);
+    }
+  }
   return {val:base, max};
 }
 
@@ -785,7 +801,7 @@ function triggerAuras(p){
 
 // fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
 setInterval(()=>{
-  if(!state.running) return;
+  if(!state.running || state.winner) return;
   const now = Date.now();
   for(const p of state.players){
     if(p.rollAnim.active){
@@ -1453,7 +1469,7 @@ function renderWin(){
     <div style="color:var(--sub);letter-spacing:3px;font-size:11px;margin-bottom:4px">WINNER</div>
     <h1 style="margin:0 0 12px;">${state.winner.name}</h1>
     <div class="result-list">${rows}</div>
-    <button onclick="uiReset()">もう一度</button>
+    <button data-action="reset">もう一度</button>
   </div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
 }
