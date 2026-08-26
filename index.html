@@ -72,7 +72,7 @@ html,body{
 
 /* scroll area: 相手/チェイン/ショップ。中身が多いときはここだけ内側スクロール */
 #scrollArea{flex:5 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
-#invPanel{flex:1 1 0;min-height:22px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
+#invPanel{flex:1 1 0;min-height:46px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
 #invPanel h2{color:var(--role-self);}
 #scrollArea::-webkit-scrollbar{width:4px;}
 #scrollArea::-webkit-scrollbar-thumb{background:var(--sub);border-radius:2px;}
@@ -148,7 +148,7 @@ html,body{
 /* self panel — pinned, never rebuilt via innerHTML during play. Outline style like everything else. */
 #selfPanel{flex:0 0 auto;background:transparent;border:1.5px solid var(--role-self);border-radius:12px;padding:6px;margin-bottom:2px;position:relative;}
 
-.inventory-row{display:flex;flex-wrap:wrap;gap:3px;max-height:24px;overflow-y:auto;margin-bottom:3px;}
+.inventory-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:3px;}
 .inv-chip{font-size:8px;padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap;border:1.5px solid var(--sub);background:transparent;cursor:pointer;}
 .inv-empty{font-size:8px;color:var(--sub);font-style:italic;}
 .inv-tip{
@@ -219,9 +219,15 @@ html,body{
 .modal button:active{border-color:var(--role-self);color:var(--role-self);}
 .modal .cancel{color:var(--red);border-color:var(--red);}
 
-.win-overlay{position:fixed;inset:0;background:rgba(27,42,74,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;text-align:center;}
-.win-overlay h1{font-family:'Share Tech Mono',monospace;font-size:40px;color:var(--yellow);letter-spacing:2px;}
-.win-overlay button{margin-top:14px;padding:10px 22px;border-radius:10px;background:transparent;border:2px solid var(--yellow);color:var(--yellow);font-weight:900;cursor:pointer;}
+.win-overlay{position:fixed;inset:0;background:rgba(27,42,74,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;text-align:center;padding:16px;}
+.win-overlay h1{font-family:'Share Tech Mono',monospace;font-size:32px;color:var(--yellow);letter-spacing:2px;}
+.win-overlay button{margin-top:12px;padding:10px 22px;border-radius:10px;background:transparent;border:2px solid var(--yellow);color:var(--yellow);font-weight:900;cursor:pointer;flex-shrink:0;}
+.result-list{width:100%;max-width:340px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.result-card{border:1.5px solid var(--sub);border-radius:10px;padding:8px;text-align:left;background:rgba(255,255,255,0.03);}
+.result-head{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px;}
+.result-stats{font-size:9px;color:var(--cream);opacity:0.85;margin-bottom:5px;}
+.result-items{display:flex;flex-wrap:wrap;gap:3px;}
+.result-chip{font-size:8px;padding:2px 5px;border-radius:5px;border:1.5px solid;font-weight:700;white-space:nowrap;}
 
 /* start screen */
 .start-screen{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:10px;}
@@ -259,11 +265,21 @@ document.addEventListener('pointerdown', function(e){
 }, {passive:false});
 
 let audioCtx = null;
+let audioUnlocked = false;
 function ensureAudio(){
   if(!audioCtx){
     try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
   }
-  if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
+  if(audioCtx.state==='suspended'){ audioCtx.resume(); }
+  if(!audioUnlocked){
+    // iOS Safari向け：無音バッファを鳴らして確実にオーディオをアンロックする
+    try{
+      const buf = audioCtx.createBuffer(1,1,22050);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf; src.connect(audioCtx.destination); src.start(0);
+      audioUnlocked = true;
+    }catch(e){}
+  }
 }
 const soundSettings = { on:true, volume:1.0 };
 function beep(freq, dur, type, vol, delay){
@@ -307,11 +323,19 @@ function sfxRollTick(){
   beep(base*1.9, 0.02, 'sawtooth', 0.035, 0.004);
   noiseClank(0.035, base*2.4, 14, 0.06);
 }
+// パチンコの玉払い出しのようなコイン連打音
+function sfxCoinCascade(count){
+  const n = Math.max(1, Math.min(count, 14));
+  for(let i=0;i<n;i++){
+    beep(1100+Math.random()*500, 0.05, 'sine', 0.11, i*0.045);
+  }
+}
 function sfxRollResult(total){
   const base = 320+Math.min(total,30)*16;
   beep(base, 0.14, 'square', 0.14);
   beep(base*2.01, 0.1, 'triangle', 0.08, 0.02);
   noiseClank(0.06, base*3, 8, 0.08, 0.01);
+  if(total>=15) sfxCoinCascade(Math.min(Math.floor(total/6), 12));
 }
 function sfxEnter(){ beep(520,0.07,'sine',0.12); beep(760,0.08,'sine',0.1,0.06); }
 function sfxLeave(){ beep(520,0.07,'sine',0.1); beep(340,0.09,'sine',0.1,0.06); }
@@ -321,11 +345,11 @@ function sfxChain(){ beep(600,0.05,'triangle',0.12); beep(800,0.05,'triangle',0.
 function sfxAura(){ beep(120,0.12,'sawtooth',0.18); beep(85,0.14,'sawtooth',0.15,0.05); }
 function sfxRestock(){ beep(880,0.06,'sine',0.1); beep(1100,0.08,'sine',0.1,0.06); beep(1320,0.1,'sine',0.1,0.12); }
 function sfxRestockWarn(){ beep(440,0.09,'square',0.1); beep(440,0.09,'square',0.1,0.14); beep(440,0.09,'square',0.1,0.28); }
-function sfxWin(){ [523,659,784,1046,1318].forEach((f,i)=>beep(f,0.25,'triangle',0.2,i*0.14)); }
+function sfxWin(){ [523,659,784,1046,1318].forEach((f,i)=>beep(f,0.25,'triangle',0.2,i*0.14)); sfxCoinCascade(14); }
 function sfxClick(){ beep(900,0.03,'square',0.07); }
-function sfxMilestone(){ beep(700,0.08,'sine',0.12); beep(1050,0.12,'sine',0.14,0.07); }
+function sfxMilestone(){ beep(700,0.08,'sine',0.12); beep(1050,0.12,'sine',0.14,0.07); beep(1400,0.1,'sine',0.13,0.14); sfxCoinCascade(6); }
 function sfxLeaderChange(){ beep(400,0.06,'triangle',0.1); beep(600,0.06,'triangle',0.1,0.06); beep(900,0.1,'triangle',0.12,0.12); }
-function sfxJackpot(){ [500,700,900,1200,1500].forEach((f,i)=>beep(f,0.14,'sawtooth',0.16,i*0.06)); }
+function sfxJackpot(){ [500,700,900,1200,1500].forEach((f,i)=>beep(f,0.14,'sawtooth',0.16,i*0.06)); sfxCoinCascade(10); }
 function sfxQueueJoin(){ beep(300,0.05,'sine',0.09); beep(360,0.05,'sine',0.08,0.05); }
 function sfxYourTurn(){ beep(700,0.08,'square',0.13); beep(950,0.1,'square',0.14,0.08); }
 function sfxRankUp(){ beep(500,0.06,'triangle',0.13); beep(750,0.09,'triangle',0.15,0.06); }
@@ -339,6 +363,7 @@ function sfxCombo(n){
   beep(base,0.06,'square',0.15);
   beep(base*1.25,0.06,'square',0.14,0.05);
   beep(base*1.5,0.08,'square',0.15,0.1);
+  if(n>=4) sfxCoinCascade(Math.min(n, 8));
 }
 
 // ---------- data ----------
@@ -360,11 +385,11 @@ const ITEMS = [
   {id:34, name:'ダブルダイスパック', desc:'サイコロ+2個（永続・まとめ買い割増あり）', price:0, rarity:'epic', type:'addDice2'},
   {id:35, name:'トリプルダイスパック', desc:'サイコロ+3個（永続・まとめ買い割増大）', price:0, rarity:'legend', type:'addDice3'},
   {id:50, name:'クインタプルダイスパック', desc:'サイコロ+5個（永続・まとめ買い割増特大）', price:0, rarity:'legend', type:'addDice5'},
-  {id:27, name:'倍化の指輪', desc:'合計出目+10%（永続・重ね掛け可、上限なし）', price:70, rarity:'epic', type:'multiplier'},
-  {id:36, name:'強化の指輪', desc:'合計出目+20%（永続・重ね掛け可、上限なし）', price:150, rarity:'epic', type:'multiplier'},
-  {id:37, name:'神域の指輪', desc:'合計出目+40%（永続・重ね掛け可、上限なし）', price:400, rarity:'legend', type:'multiplier'},
-  {id:39, name:'加速の指輪', desc:'合計出目+15%（永続・重ね掛け可、上限なし）', price:100, rarity:'rare', type:'multiplier'},
-  {id:40, name:'覚醒の秘宝', desc:'合計出目が一撃で+900%（実質10倍）。超高額・重ね掛け可', price:2000, rarity:'legend', type:'multiplierBig'},
+  {id:27, name:'倍化の指輪', desc:'合計出目×1.1（複利で重なる・永続、上限なし）', price:70, rarity:'epic', type:'multiplier', amount:0.1},
+  {id:36, name:'強化の指輪', desc:'合計出目×1.2（複利で重なる・永続、上限なし）', price:150, rarity:'epic', type:'multiplier', amount:0.2},
+  {id:37, name:'神域の指輪', desc:'合計出目×1.4（複利で重なる・永続、上限なし）', price:400, rarity:'legend', type:'multiplier', amount:0.4},
+  {id:39, name:'加速の指輪', desc:'合計出目×1.15（複利で重なる・永続、上限なし）', price:100, rarity:'rare', type:'multiplier', amount:0.15},
+  {id:40, name:'覚醒の秘宝', desc:'合計出目が一撃で×10（他の倍率と複利で重なる）。超高額', price:2000, rarity:'legend', type:'multiplierBig'},
   // 出目に直接加算するアイテム群（永続・重ね掛け可）
   {id:48, name:'出目+10', desc:'ロールごとに合計出目+10（永続）', price:9, rarity:'common', type:'flatBonus', amount:10},
   {id:49, name:'出目+15', desc:'ロールごとに合計出目+15（永続）', price:14, rarity:'common', type:'flatBonus', amount:15},
@@ -374,8 +399,8 @@ const ITEMS = [
   {id:44, name:'固定ダイス100', desc:'出目100の特別なダイスが1個増える感覚（永続、+100）', price:350, rarity:'legend', type:'flatBonus', amount:100},
   {id:45, name:'固定ダイス500', desc:'出目500の特別なダイスが1個増える感覚（永続、+500）', price:1200, rarity:'legend', type:'flatBonus', amount:500},
   // 出目を一撃で○倍にする秘薬（永続・重ね掛け可）
-  {id:46, name:'倍化の秘薬', desc:'合計出目が一撃で+100%（実質2倍）', price:500, rarity:'legend', type:'multiplierJump', amount:1.0},
-  {id:47, name:'3倍の秘薬', desc:'合計出目が一撃で+200%（実質3倍）', price:1000, rarity:'legend', type:'multiplierJump', amount:2.0},
+  {id:46, name:'倍化の秘薬', desc:'合計出目が一撃で×2（他の倍率と複利で重なる）', price:500, rarity:'legend', type:'multiplierJump', amount:1.0},
+  {id:47, name:'3倍の秘薬', desc:'合計出目が一撃で×3（他の倍率と複利で重なる）', price:1000, rarity:'legend', type:'multiplierJump', amount:2.0},
   // コンボ専用アイテム（3つ揃うと大きな力・単体では無力。妨害目的で買われることも）
   {id:54, name:'紅の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA1'},
   {id:55, name:'蒼の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA2'},
@@ -471,7 +496,7 @@ function newPlayer(id, name, isHuman){
     auraProc: {},
     interestRate: 0,
     insuranceBonus: 0,
-    multiplierBonus: 0,
+    multiplierFactor: 1,
     totalItemsOwned: 0,
     collectorLevel: 0,
     comboCount: 0,
@@ -596,8 +621,8 @@ function finalizeRoll(p){
   const collectorBonus = (p.collectorLevel||0) * Math.floor((p.totalItemsOwned||0)/2);
   rawTotal += collectorBonus;
   rawTotal += (p.flatRollBonus||0);
-  const comboMult = 1 + Math.min(p.comboCount||0, 40) * 0.15; // コンボが続くほど爆発的に増える（最大+6.0倍）
-  const total = Math.round(rawTotal * (1 + (p.multiplierBonus||0)) * comboMult);
+  const comboMult = 1 + Math.min(p.comboCount||0, 100) * 0.15; // コンボが続くほど爆発的に増える（最大+15.0倍）
+  const total = Math.round(rawTotal * (p.multiplierFactor||1) * comboMult);
   p.lastRollTotal = total;
 
   const prevMilestone = Math.floor(p.progress/1000);
@@ -620,7 +645,7 @@ function finalizeRoll(p){
   } else {
     p.comboCount = 0;
   }
-  const bonusTxt = (p.multiplierBonus||comboMult>1) ? `（${rawTotal}→×${((1+(p.multiplierBonus||0))*comboMult).toFixed(2)}）` : '';
+  const bonusTxt = ((p.multiplierFactor||1)>1||comboMult>1) ? `（${rawTotal}→×${((p.multiplierFactor||1)*comboMult).toFixed(2)}）` : '';
   addLog(`${p.name} が [${rolls.join(',')}] で合計+${total}${bonusTxt}（進捗${p.progress}）`);
   sfxRollResult(total);
   if(p.isHuman) popRoll(total, p.comboCount);
@@ -867,7 +892,7 @@ function resolveAuctionSlot(slotIdx){
 function checkComboSetA(p){
   if(p.comboPieces.a1 && p.comboPieces.a2 && p.comboPieces.a3 && !p.effects.comboSetAComplete){
     p.effects.comboSetAComplete = true;
-    p.multiplierBonus = (p.multiplierBonus||0) + 9.0; // 実質10倍
+    p.multiplierFactor = (p.multiplierFactor||1) * 10; // 実質10倍
     addLog(`${p.name} が三色の欠片を揃えた！合計出目が実質10倍に！`, 'win');
     sfxJackpot();
   }
@@ -903,10 +928,10 @@ function applyEffect(p, item){
     case 'interest': p.interestRate = Math.min(0.03, (p.interestRate||0) + 0.005); break;
     case 'insurance': p.insuranceBonus = (p.insuranceBonus||0) + 5; break;
     case 'scoutPerm': p.effects.scoutPermanent = true; break;
-    case 'multiplier': p.multiplierBonus = (p.multiplierBonus||0) + 0.1; break; // 上限なし（価格の指数上昇が自然なブレーキになる）
-    case 'multiplierBig': p.multiplierBonus = (p.multiplierBonus||0) + 9.0; break; // 一撃で実質10倍
+    case 'multiplier': p.multiplierFactor = (p.multiplierFactor||1) * (1 + (item.amount||0.1)); break; // 複利で重なる（上限なし）
+    case 'multiplierBig': p.multiplierFactor = (p.multiplierFactor||1) * 10; break; // 一撃で実質10倍
     case 'flatBonus': p.flatRollBonus = (p.flatRollBonus||0) + (item.amount||0); break;
-    case 'multiplierJump': p.multiplierBonus = (p.multiplierBonus||0) + (item.amount||0); break;
+    case 'multiplierJump': p.multiplierFactor = (p.multiplierFactor||1) * (1 + (item.amount||0)); break;
     case 'comboPieceA1': p.comboPieces.a1 = true; checkComboSetA(p); break;
     case 'comboPieceA2': p.comboPieces.a2 = true; checkComboSetA(p); break;
     case 'comboPieceA3': p.comboPieces.a3 = true; checkComboSetA(p); break;
@@ -1270,7 +1295,7 @@ function renderBadges(p, now){
   if(p.effects.immuneStealPermanent) b+=`<span class="badge buff">盗難耐性</span>`;
   if(p.effects.immuneFakePermanent) b+=`<span class="badge buff">目視回避</span>`;
   if(p.chainBonusSec>0) b+=`<span class="badge">CHAIN+${p.chainBonusSec}秒</span>`;
-  if(p.multiplierBonus>0) b+=`<span class="badge">出目×${(1+p.multiplierBonus).toFixed(1)}</span>`;
+  if(p.multiplierFactor>1) b+=`<span class="badge">出目×${p.multiplierFactor.toFixed(2)}</span>`;
   if(p.flatRollBonus>0) b+=`<span class="badge">出目+${p.flatRollBonus}/回</span>`;
   if(p.customDice && p.customDice.length>0) b+=`<span class="badge">特殊ダイス×${p.customDice.length}</span>`;
   if(p.comboPieces && (p.comboPieces.a1||p.comboPieces.a2||p.comboPieces.a3) && !p.effects.comboSetAComplete){
@@ -1279,7 +1304,7 @@ function renderBadges(p, now){
   }
   if(p.effects.comboSetAComplete) b+=`<span class="badge combo-badge">欠片コンプ！×10</span>`;
   if(p.collectorLevel>0) b+=`<span class="badge">収集の力+${(p.collectorLevel||0)*Math.floor((p.totalItemsOwned||0)/3)}（所持${p.totalItemsOwned||0}）</span>`;
-  if(p.comboCount>=2) b+=`<span class="badge combo-badge">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,12)*0.08).toFixed(2)}）</span>`;
+  if(p.comboCount>=2) b+=`<span class="badge combo-badge">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,100)*0.15).toFixed(2)}）</span>`;
   if(p.interestRate>0) b+=`<span class="badge">利息${(p.interestRate*100).toFixed(1)}%</span>`;
   if(p.insuranceBonus>0) b+=`<span class="badge buff">保険+${p.insuranceBonus}</span>`;
   if(p.effects.scoutPermanent) b+=`<span class="badge buff">偵察</span>`;
@@ -1304,7 +1329,29 @@ function renderTargetModal(){
 }
 
 function renderWin(){
-  const html = `<div class="win-overlay"><div style="color:var(--sub);letter-spacing:3px;font-size:11px;margin-bottom:8px">WINNER</div><h1>${state.winner.name}</h1><button onclick="uiReset()">もう一度</button></div>`;
+  const OPP_COLORS = ['var(--red)','var(--blue)','var(--yellow)'];
+  const sorted = [...state.players].sort((a,b)=>b.progress-a.progress);
+  let rows = '';
+  sorted.forEach((p, idx)=>{
+    const rank = idx+1;
+    const color = p.isHuman ? 'var(--blue)' : OPP_COLORS[state.players.filter(x=>!x.isHuman).indexOf(p) % OPP_COLORS.length];
+    const items = p.inventory && p.inventory.length ? p.inventory.map(it=>`<span class="result-chip" style="border-color:${RARITY[it.rarity].color};color:${RARITY[it.rarity].color}">${it.name}</span>`).join('') : `<span class="inv-empty">アイテムなし</span>`;
+    rows += `<div class="result-card" style="border-color:${color}">
+      <div class="result-head">
+        <span class="rank-badge" style="position:static;border-color:${color};color:${color}">${rank}位</span>
+        <b style="color:${color}">${p.name}</b>
+        <span class="mono" style="margin-left:auto;color:${color}">${fmt(p.progress)}</span>
+      </div>
+      <div class="result-stats mono">ダイス×${p.diceCount} ／ 出目×${(p.multiplierFactor||1).toFixed(2)} ／ ボーナス+${p.flatRollBonus||0} ／ コイン${p.coins}</div>
+      <div class="result-items">${items}</div>
+    </div>`;
+  });
+  const html = `<div class="win-overlay">
+    <div style="color:var(--sub);letter-spacing:3px;font-size:11px;margin-bottom:4px">WINNER</div>
+    <h1 style="margin:0 0 12px;">${state.winner.name}</h1>
+    <div class="result-list">${rows}</div>
+    <button onclick="uiReset()">もう一度</button>
+  </div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
 }
 
