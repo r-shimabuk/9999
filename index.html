@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>9999</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap');
@@ -265,6 +265,15 @@ document.addEventListener('touchend', function(e){
   const now = Date.now();
   if(now - lastTouchEnd <= 350){ e.preventDefault(); }
   lastTouchEnd = now;
+}, {passive:false});
+
+// ピンチズーム（2本指操作）による拡大を防止
+document.addEventListener('gesturestart', function(e){ e.preventDefault(); }, {passive:false});
+document.addEventListener('gesturechange', function(e){ e.preventDefault(); }, {passive:false});
+document.addEventListener('gestureend', function(e){ e.preventDefault(); }, {passive:false});
+// 2本指以上でのtouchmove（ピンチ操作）も防止
+document.addEventListener('touchmove', function(e){
+  if(e.touches && e.touches.length > 1){ e.preventDefault(); }
 }, {passive:false});
 
 // ショップの購入/競り上げボタンは頻繁に再描画される領域にあるため、
