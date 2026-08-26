@@ -1519,8 +1519,8 @@ function renderStartScreen(){
       <div class="start-sub">DICE RACE &amp; SHOP</div>
       <p class="start-desc">Roll dice with 3 rivals — first to reach 9999 wins. Buy items in the shop to accelerate or sabotage others.</p>
       <p class="start-desc ja">4人でサイコロを振り合い、最初に9999に到達したプレイヤーの勝ち。ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
-      ${saved ? `<button class="start-btn" onclick="uiResume()">RESUME ／ 続きから再開</button>` : ''}
       <button class="start-btn" onclick="uiStart()">${saved?'NEW GAME ／ 最初から始める':'START ／ ゲームスタート'}</button>
+      ${saved ? `<button class="start-btn" onclick="uiResume()">RESUME ／ 続きから再開</button>` : ''}
       <div class="start-note">Progress auto-saves every few seconds (this browser only) ／ 進行状況は数秒おきに自動保存されます（このブラウザ内のみ）</div>
     </div>
   `;
