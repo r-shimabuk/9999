@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>9999</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap');
+
+:root{
+  --bg:#F7F1DF;
+  --paper:#F1E8CC;
+  --ink:#1B2A4A;
+  --sub:#9C8B63;
+  --blue:#1E6FFF;
+  --purple:#9B5DE5;
+  --red:#FF3B30;
+  --yellow:#FFD400;
+  --green:#2ECC71;
+  --orange:#FF7A00;
+  --purple:#9B5DE5;
+  --teal:#00BFA6;
+  --cream:#FFF8E7;
+  /* rarity + buff/debuff — vivid primaries: red/blue/yellow/green/orange */
+  --c-common:#2ECC71;
+  --c-rare:#1E6FFF;
+  --c-epic:#FF7A00;
+  --c-legend:#FFD400;
+  --c-junk:#8A7A63;
+  --c-buff:#2ECC71;
+  --c-debuff:#FF3B30;
+  /* role colors per window */
+  --role-opp:#2ECC71;
+  --role-chain:#FF7A00;
+  --role-shop:#FF3B30;
+  --role-self:#1E6FFF;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation;}
+html,body{
+  margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  height:100%; overflow:hidden; overscroll-behavior:none;
+}
+.mono{font-family:'Share Tech Mono',monospace;}
+#app{
+  height:100dvh; height:100vh;
+  max-width:480px;margin:0 auto;
+  display:flex;flex-direction:column;
+  padding:3px 3px 0;
+  gap:2px;
+  overflow:hidden;
+}
+
+/* header */
+.title{display:flex;align-items:baseline;justify-content:space-between;flex:0 0 auto;padding:2px 2px 0;}
+.title h1{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:2px;margin:0;color:var(--blue);font-weight:900;}
+.title .reset{font-size:9px;color:var(--red);background:none;border:1.5px solid var(--red);border-radius:6px;padding:3px 8px;cursor:pointer;font-weight:700;}
+
+/* scroll area: the ONLY thing that scrolls */
+#scrollArea{flex:5 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
+#invPanel{flex:1 1 0;min-height:22px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
+#invPanel h2{color:var(--role-self);}
+#scrollArea::-webkit-scrollbar{width:4px;}
+#scrollArea::-webkit-scrollbar-thumb{background:var(--sub);border-radius:2px;}
+
+.panel{background:transparent;border:1.5px solid var(--sub);border-radius:11px;padding:5px 6px;flex:0 0 auto;}
+.panel h2{font-size:8px;letter-spacing:1px;margin:0 0 3px;font-weight:700;text-transform:uppercase;color:var(--sub);}
+.panel.role-opp{border-color:var(--role-opp);}
+.panel.role-opp h2{color:var(--role-opp);}
+.panel.role-chain{border-color:var(--role-chain);padding:0;}
+.panel.role-shop{border-color:var(--role-shop);}
+.panel.role-shop h2{color:var(--role-shop);}
+.panel.role-log{border-color:var(--role-log);}
+.panel.role-log h2{color:var(--role-log);}
+
+/* opponents */
+.opp-grid{display:flex;gap:6px;}
+.opp-card{flex:1;background:transparent;border:1.5px solid var(--role-opp);border-radius:7px;padding:3px;position:relative;min-width:0;}
+.opp-card.leader{border-width:2.5px;}
+.opp-name{font-size:9px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;}
+.opp-die{width:20px;height:20px;border-radius:5px;background:transparent;border:1.5px solid;display:flex;align-items:center;justify-content:center;font-family:'Share Tech Mono',monospace;font-size:11px;margin-bottom:2px;}
+.opp-bar{height:5px;border-radius:3px;background:rgba(0,0,0,0.06);overflow:hidden;margin-bottom:3px;}
+.opp-bar-fill{height:100%;}
+.opp-score{font-size:8px;color:var(--sub);font-family:'Share Tech Mono',monospace;}
+.bubble{
+  position:absolute;top:-8px;left:5px;background:var(--bg);color:var(--yellow);border:1.5px solid var(--yellow);font-size:8px;padding:1px 5px;border-radius:7px;
+  font-weight:700;white-space:nowrap;
+}
+.rank-badge{position:absolute;top:-9px;right:3px;font-size:9px;font-weight:900;background:var(--bg);border:1.5px solid;border-radius:8px;padding:1px 5px;}
+
+/* chain */
+.chain-box{display:flex;align-items:center;gap:6px;font-size:9px;padding:4px 6px;}
+.chain-dot{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--role-chain);flex-shrink:0;}
+.chain-dot.active{background:var(--role-chain);box-shadow:0 0 5px rgba(255,122,0,0.6);animation:chainDotPulse .5s ease-in-out infinite alternate;}
+@keyframes chainDotPulse{0%{box-shadow:0 0 4px rgba(255,122,0,0.5);}100%{box-shadow:0 0 12px rgba(255,122,0,0.9);}}
+.panel.role-chain.chain-live{animation:chainPanelGlow .8s ease-in-out infinite alternate;}
+@keyframes chainPanelGlow{0%{box-shadow:0 0 0 rgba(255,122,0,0);}100%{box-shadow:0 0 10px rgba(255,122,0,0.5);}}
+.chain-text{color:var(--role-chain);flex:1;}
+.chain-text b{color:var(--role-chain);}
+.ticker{font-size:8px;color:var(--sub);padding:0 6px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Share Tech Mono',monospace;}
+.ticker.win{color:var(--c-buff);font-weight:700;}
+.ticker.atk{color:var(--c-debuff);font-weight:700;}
+
+/* shop */
+.shop-slots{display:flex;align-items:stretch;gap:6px;margin-bottom:6px;}
+.slot{flex:1;background:transparent;border:1.5px solid var(--sub);border-radius:8px;padding:4px;min-height:88px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;}
+.slot.locked{opacity:0.4;}
+.slot.auction{animation:auctionPulse 1s ease-in-out infinite;}
+.slot.auction.mine{animation:auctionPulseMine 0.7s ease-in-out infinite;border-width:3px!important;background:rgba(30,111,255,0.08);}
+@keyframes auctionPulseMine{0%{box-shadow:0 0 4px var(--blue);}50%{box-shadow:0 0 16px var(--blue);}100%{box-shadow:0 0 4px var(--blue);}}
+@keyframes auctionPulse{0%{box-shadow:0 0 0 rgba(0,0,0,0);}50%{box-shadow:0 0 8px currentColor;}100%{box-shadow:0 0 0 rgba(0,0,0,0);}}
+.slot .rarity-tag{font-size:7px;letter-spacing:1px;padding:2px 5px;border-radius:3px;display:inline-block;margin-bottom:3px;font-weight:700;border:1.5px solid;background:transparent;}
+.slot .iname{font-size:10px;font-weight:700;line-height:1.25;margin-bottom:2px;color:var(--ink);}
+.slot .idesc{font-size:8px;color:var(--sub);line-height:1.25;margin-bottom:5px;}
+.slot .price-big{font-size:15px;font-family:'Share Tech Mono',monospace;font-weight:900;line-height:1;}
+.slot button{width:100%;margin-top:4px;padding:8px 3px;border-radius:8px;font-weight:900;font-size:10.5px;line-height:1.25;cursor:pointer;background:transparent;border:2px solid var(--purple);color:var(--purple);min-height:38px;}
+.slot button:disabled{border-color:var(--sub)!important;color:var(--sub)!important;cursor:not-allowed;}
+.slot .empty{color:var(--sub);font-size:9px;text-align:center;margin:auto;}
+
+.shop-status{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:var(--sub);margin-bottom:3px;}
+.enter-btn{width:100%;padding:12px;border:none;border-radius:9px;background:transparent;border:2px solid var(--role-shop);color:var(--role-shop);font-weight:900;cursor:pointer;font-size:13px;}
+.enter-btn:active{transform:scale(0.97);}
+.enter-btn:disabled{border-color:var(--sub);color:var(--sub);cursor:not-allowed;}
+.leave-btn{width:100%;padding:10px;border-radius:9px;background:transparent;border:2px solid var(--role-shop);color:var(--role-shop);font-weight:900;cursor:pointer;font-size:12px;margin-top:5px;}
+.leave-btn:active{transform:scale(0.97);}
+
+/* log */
+.log-box{max-height:64px;overflow-y:auto;display:flex;flex-direction:column-reverse;font-size:8px;font-family:'Share Tech Mono',monospace;}
+.log-line{padding:1px 0;border-bottom:1px solid var(--paper);color:var(--sub);}
+.log-line b{color:var(--ink);}
+.log-line.win{color:var(--c-buff);font-weight:700;}
+.log-line.atk{color:var(--c-debuff);font-weight:700;}
+
+/* self panel — pinned, never rebuilt via innerHTML during play. Outline style like everything else. */
+#selfPanel{flex:0 0 auto;background:transparent;border:1.5px solid var(--role-self);border-radius:12px;padding:6px;margin-bottom:2px;position:relative;}
+
+.inventory-row{display:flex;flex-wrap:wrap;gap:3px;max-height:24px;overflow-y:auto;margin-bottom:3px;}
+.inv-chip{font-size:8px;padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap;border:1.5px solid var(--sub);background:transparent;cursor:pointer;}
+.inv-empty{font-size:8px;color:var(--sub);font-style:italic;}
+.inv-tip{
+  position:absolute;background:var(--ink);color:var(--cream);font-size:9px;line-height:1.4;
+  padding:6px 8px;border-radius:8px;max-width:190px;z-index:6;display:none;pointer-events:none;
+  box-shadow:0 3px 8px rgba(0,0,0,0.25);
+}
+.inv-tip.show{display:block;}
+.inv-tip::after{content:'';position:absolute;bottom:-5px;left:16px;border-width:5px 5px 0;border-style:solid;border-color:var(--ink) transparent transparent transparent;}
+
+.self-row{display:flex;gap:10px;align-items:center;}
+.die-wrap{position:relative;flex-shrink:0;}
+.roll-pop{position:absolute;top:-4px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-weight:900;font-size:16px;color:var(--role-self);pointer-events:none;animation:popFloat .75s ease-out forwards;z-index:5;white-space:nowrap;}
+.roll-pop.combo{color:var(--orange);font-size:14px;}
+@keyframes popFloat{
+  0%{opacity:1;transform:translate(-50%,0) scale(0.7);}
+  25%{transform:translate(-50%,-16px) scale(1.2);}
+  100%{opacity:0;transform:translate(-50%,-42px) scale(1);}
+}
+.dice-dots{position:absolute;top:-6px;left:50%;transform:translateX(-50%);display:flex;flex-wrap:wrap;justify-content:center;gap:2px;max-width:56px;z-index:2;}
+.dice-dots .dot{width:6px;height:6px;border-radius:50%;background:var(--role-self);border:1.5px solid var(--bg);}
+.big-die{
+  width:46px;height:46px;border-radius:12px;background:transparent;
+  border:1.5px solid var(--role-self);display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:20px;color:var(--role-self);
+  flex-shrink:0;
+}
+.big-die.spin{animation:diceSpin .3s linear infinite;}
+@keyframes diceSpin{
+  0%{transform:rotate(0deg) scale(1);}
+  50%{transform:rotate(7deg) scale(1.05);}
+  100%{transform:rotate(-6deg) scale(1);}
+}
+.self-info{flex:1;min-width:0;}
+.self-name{font-size:11px;color:var(--role-self);font-weight:700;margin-bottom:3px;}
+.progress-wrap{border:1.5px solid var(--role-self);border-radius:6px;height:14px;position:relative;overflow:hidden;margin-bottom:3px;background:rgba(30,111,255,0.1);}
+.progress-fill{height:100%;background:var(--role-self);transition:width .25s;}
+.progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--ink);font-weight:700;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 3px var(--bg);}
+.stat-row{display:flex;gap:8px;font-size:9px;color:var(--sub);}
+.stat-row b{color:var(--ink);}
+
+.roll-btn{
+  margin-top:5px;width:100%;padding:11px;border:none;border-radius:12px;
+  background:var(--orange);color:var(--cream);font-weight:900;font-size:15px;letter-spacing:1.5px;
+  cursor:pointer;transition:transform .06s;user-select:none;
+}
+.roll-btn:active{transform:scale(0.96);}
+.roll-btn.cooldown{background:transparent;color:var(--sub);border:1.5px solid var(--sub);}
+
+.cooldown-bar-wrap{height:6px;border-radius:3px;background:rgba(30,111,255,0.1);border:1px solid var(--role-self);overflow:hidden;margin-top:4px;}
+.cooldown-bar-fill{height:100%;background:var(--green);transition:width .05s linear;}
+.cooldown-bar-fill.spinning{background:var(--orange);}
+.cooldown-bar-fill.frozen{background:var(--red);}
+.cooldown-label{font-size:9px;color:var(--sub);text-align:center;margin-top:3px;letter-spacing:0.5px;}
+
+.info-badges{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;max-height:34px;overflow-y:auto;}
+.badge{font-size:8px;background:transparent;border:1.5px solid var(--sub);border-radius:5px;padding:2px 5px;color:var(--sub);font-weight:700;}
+.badge.buff{border-color:var(--c-buff);color:var(--c-buff);}
+.badge.debuff{border-color:var(--c-debuff);color:var(--c-debuff);}
+.badge.combo-badge{border-color:var(--orange);color:var(--orange);font-weight:900;animation:comboBadgePulse .5s ease-in-out infinite alternate;}
+@keyframes comboBadgePulse{0%{transform:scale(1);}100%{transform:scale(1.08);}}
+
+/* target modal */
+.overlay{position:fixed;inset:0;background:rgba(27,42,74,0.55);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px;}
+.modal{background:var(--bg);border:1.5px solid var(--role-self);border-radius:14px;padding:16px;max-width:300px;width:100%;}
+.modal h3{margin:0 0 10px;font-size:13px;color:var(--ink);}
+.modal button{display:block;width:100%;padding:10px;margin-bottom:6px;border:1.5px solid var(--sub);border-radius:9px;background:transparent;color:var(--ink);cursor:pointer;font-size:12px;font-weight:700;}
+.modal button:active{border-color:var(--role-self);color:var(--role-self);}
+.modal .cancel{color:var(--red);border-color:var(--red);}
+
+.win-overlay{position:fixed;inset:0;background:rgba(27,42,74,0.85);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:60;text-align:center;}
+.win-overlay h1{font-family:'Share Tech Mono',monospace;font-size:40px;color:var(--yellow);letter-spacing:2px;}
+.win-overlay button{margin-top:14px;padding:10px 22px;border-radius:10px;background:transparent;border:2px solid var(--yellow);color:var(--yellow);font-weight:900;cursor:pointer;}
+
+/* start screen */
+.start-screen{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:10px;}
+.start-title{font-family:'Share Tech Mono',monospace;font-size:52px;letter-spacing:6px;margin:0;color:var(--blue);font-weight:900;}
+.start-sub{font-size:11px;letter-spacing:4px;color:var(--sub);margin-bottom:10px;}
+.start-desc{font-size:12px;color:var(--ink);line-height:1.7;max-width:280px;margin:0 0 14px;}
+.start-btn{padding:16px 36px;border:1.5px solid var(--orange);border-radius:14px;background:transparent;color:var(--orange);font-weight:900;font-size:16px;letter-spacing:2px;cursor:pointer;}
+.start-btn:active{transform:scale(0.97);}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+// ---------- sound engine (Web Audio, no external files) ----------
+// ダブルタップでの拡大を防止（iOS Safariのフォールバック）
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e){
+  const now = Date.now();
+  if(now - lastTouchEnd <= 350){ e.preventDefault(); }
+  lastTouchEnd = now;
+}, {passive:false});
+
+// ショップの購入/競り上げボタンは頻繁に再描画される領域にあるため、
+// clickではなくpointerdownで即座に処理し、再描画によるタップ消失を防ぐ
+document.addEventListener('pointerdown', function(e){
+  const btn = e.target.closest('[data-action]');
+  if(!btn || btn.disabled) return;
+  e.preventDefault();
+  ensureAudio();
+  const action = btn.dataset.action;
+  const slot = parseInt(btn.dataset.slot, 10);
+  if(action==='buy'){ uiBuy(slot); }
+  else if(action==='raise'){ uiRaiseTo(slot, parseInt(btn.dataset.tier,10)); }
+}, {passive:false});
+
+let audioCtx = null;
+function ensureAudio(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  }
+  if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
+}
+function beep(freq, dur, type, vol, delay){
+  if(!audioCtx) return;
+  const t0 = audioCtx.currentTime + (delay||0);
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type||'square';
+  osc.frequency.setValueAtTime(freq, t0);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.linearRampToValueAtTime(vol||0.15, t0+0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(t0); osc.stop(t0+dur+0.03);
+}
+function noiseClank(dur, freq, q, vol, delay){
+  if(!audioCtx) return;
+  const t0 = audioCtx.currentTime + (delay||0);
+  const size = Math.max(1, Math.floor(audioCtx.sampleRate*dur));
+  const buffer = audioCtx.createBuffer(1, size, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for(let i=0;i<size;i++) data[i] = (Math.random()*2-1) * (1-i/size);
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass'; bp.frequency.value = freq; bp.Q.value = q||10;
+  const gain = audioCtx.createGain();
+  gain.gain.setValueAtTime(vol||0.12, t0);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+  src.connect(bp); bp.connect(gain); gain.connect(audioCtx.destination);
+  src.start(t0);
+}
+// metallic / techno-factory dice tick: inharmonic square+saw clang + noise clank
+function sfxRollTick(){
+  const base = 500 + Math.random()*700;
+  beep(base, 0.028, 'square', 0.05);
+  beep(base*1.9, 0.02, 'sawtooth', 0.035, 0.004);
+  noiseClank(0.035, base*2.4, 14, 0.06);
+}
+function sfxRollResult(total){
+  const base = 320+Math.min(total,30)*16;
+  beep(base, 0.14, 'square', 0.14);
+  beep(base*2.01, 0.1, 'triangle', 0.08, 0.02);
+  noiseClank(0.06, base*3, 8, 0.08, 0.01);
+}
+function sfxEnter(){ beep(520,0.07,'sine',0.12); beep(760,0.08,'sine',0.1,0.06); }
+function sfxLeave(){ beep(520,0.07,'sine',0.1); beep(340,0.09,'sine',0.1,0.06); }
+function sfxBuy(){ beep(720,0.06,'square',0.15); beep(1040,0.09,'square',0.15,0.06); }
+function sfxFail(){ beep(140,0.15,'sawtooth',0.12); }
+function sfxChain(){ beep(600,0.05,'triangle',0.12); beep(800,0.05,'triangle',0.12,0.05); beep(1000,0.08,'triangle',0.14,0.1); }
+function sfxAura(){ beep(120,0.12,'sawtooth',0.18); beep(85,0.14,'sawtooth',0.15,0.05); }
+function sfxRestock(){ beep(880,0.06,'sine',0.1); beep(1100,0.08,'sine',0.1,0.06); beep(1320,0.1,'sine',0.1,0.12); }
+function sfxRestockWarn(){ beep(440,0.09,'square',0.1); beep(440,0.09,'square',0.1,0.14); beep(440,0.09,'square',0.1,0.28); }
+function sfxWin(){ [523,659,784,1046,1318].forEach((f,i)=>beep(f,0.25,'triangle',0.2,i*0.14)); }
+function sfxClick(){ beep(900,0.03,'square',0.07); }
+function sfxMilestone(){ beep(700,0.08,'sine',0.12); beep(1050,0.12,'sine',0.14,0.07); }
+function sfxLeaderChange(){ beep(400,0.06,'triangle',0.1); beep(600,0.06,'triangle',0.1,0.06); beep(900,0.1,'triangle',0.12,0.12); }
+function sfxJackpot(){ [500,700,900,1200,1500].forEach((f,i)=>beep(f,0.14,'sawtooth',0.16,i*0.06)); }
+function sfxQueueJoin(){ beep(300,0.05,'sine',0.09); beep(360,0.05,'sine',0.08,0.05); }
+function sfxYourTurn(){ beep(700,0.08,'square',0.13); beep(950,0.1,'square',0.14,0.08); }
+function sfxRankUp(){ beep(500,0.06,'triangle',0.13); beep(750,0.09,'triangle',0.15,0.06); }
+function sfxRankDown(){ beep(500,0.07,'sawtooth',0.1); beep(320,0.09,'sawtooth',0.1,0.06); }
+function sfxImmuneBlock(){ beep(1200,0.04,'sine',0.1); beep(1400,0.05,'sine',0.09,0.04); }
+function sfxBidStart(){ beep(480,0.07,'sine',0.12); beep(640,0.08,'sine',0.1,0.05); }
+function sfxBidRaise(tier){ const b=480+tier*55; beep(b,0.06,'square',0.13); beep(b*1.3,0.07,'square',0.12,0.05); }
+function sfxAuctionWin(){ beep(700,0.1,'triangle',0.15); beep(1000,0.12,'triangle',0.16,0.08); beep(1300,0.14,'triangle',0.15,0.16); }
+function sfxCombo(n){
+  const base = 500 + Math.min(n,10)*40;
+  beep(base,0.06,'square',0.15);
+  beep(base*1.25,0.06,'square',0.14,0.05);
+  beep(base*1.5,0.08,'square',0.15,0.1);
+}
+
+// ---------- data ----------
+const RARITY = {
+  common:{label:'COMMON', color:'var(--c-common)'},
+  rare:{label:'RARE', color:'var(--c-rare)'},
+  epic:{label:'EPIC', color:'var(--c-epic)'},
+  legend:{label:'LEGEND', color:'var(--c-legend)'},
+};
+
+const ITEMS = [
+  // 加速系（永続・重ね掛け）
+  {id:1, name:'追加ダイス', desc:'サイコロ+1個（永続）', price:10, rarity:'common', type:'addDice'},
+  {id:2, name:'追加ダイス（量産型）', desc:'サイコロ+1個（永続）', price:10, rarity:'rare', type:'addDice'},
+  {id:3, name:'追加ダイス（限定品）', desc:'サイコロ+1個（永続）', price:10, rarity:'epic', type:'addDice'},
+  {id:4, name:'追加ダイス（伝説級）', desc:'サイコロ+1個（永続）', price:10, rarity:'legend', type:'addDice'},
+  {id:32, name:'追加ダイス（訳あり品）', desc:'サイコロ+1個（永続）', price:10, rarity:'common', type:'addDice'},
+  {id:33, name:'追加ダイス（お買い得）', desc:'サイコロ+1個（永続）', price:10, rarity:'common', type:'addDice'},
+  {id:34, name:'ダブルダイスパック', desc:'サイコロ+2個（永続・まとめ買い割増あり）', price:0, rarity:'epic', type:'addDice2'},
+  {id:35, name:'トリプルダイスパック', desc:'サイコロ+3個（永続・まとめ買い割増大）', price:0, rarity:'legend', type:'addDice3'},
+  {id:50, name:'クインタプルダイスパック', desc:'サイコロ+5個（永続・まとめ買い割増特大）', price:0, rarity:'legend', type:'addDice5'},
+  {id:27, name:'倍化の指輪', desc:'合計出目+10%（永続・重ね掛け可、上限なし）', price:70, rarity:'epic', type:'multiplier'},
+  {id:36, name:'強化の指輪', desc:'合計出目+20%（永続・重ね掛け可、上限なし）', price:150, rarity:'epic', type:'multiplier'},
+  {id:37, name:'神域の指輪', desc:'合計出目+40%（永続・重ね掛け可、上限なし）', price:400, rarity:'legend', type:'multiplier'},
+  {id:39, name:'加速の指輪', desc:'合計出目+15%（永続・重ね掛け可、上限なし）', price:100, rarity:'rare', type:'multiplier'},
+  {id:40, name:'覚醒の秘宝', desc:'合計出目が一撃で+900%（実質10倍）。超高額・重ね掛け可', price:2000, rarity:'legend', type:'multiplierBig'},
+  // 出目に直接加算するアイテム群（永続・重ね掛け可）
+  {id:48, name:'出目+10', desc:'ロールごとに合計出目+10（永続）', price:9, rarity:'common', type:'flatBonus', amount:10},
+  {id:49, name:'出目+15', desc:'ロールごとに合計出目+15（永続）', price:14, rarity:'common', type:'flatBonus', amount:15},
+  {id:41, name:'出目+25', desc:'ロールごとに合計出目+25（永続）', price:60, rarity:'rare', type:'flatBonus', amount:25},
+  {id:42, name:'出目+50', desc:'ロールごとに合計出目+50（永続）', price:150, rarity:'epic', type:'flatBonus', amount:50},
+  {id:43, name:'出目+100', desc:'ロールごとに合計出目+100（永続）', price:300, rarity:'epic', type:'flatBonus', amount:100},
+  {id:44, name:'固定ダイス100', desc:'出目100の特別なダイスが1個増える感覚（永続、+100）', price:350, rarity:'legend', type:'flatBonus', amount:100},
+  {id:45, name:'固定ダイス500', desc:'出目500の特別なダイスが1個増える感覚（永続、+500）', price:1200, rarity:'legend', type:'flatBonus', amount:500},
+  // 出目を一撃で○倍にする秘薬（永続・重ね掛け可）
+  {id:46, name:'倍化の秘薬', desc:'合計出目が一撃で+100%（実質2倍）', price:500, rarity:'legend', type:'multiplierJump', amount:1.0},
+  {id:47, name:'3倍の秘薬', desc:'合計出目が一撃で+200%（実質3倍）', price:1000, rarity:'legend', type:'multiplierJump', amount:2.0},
+  // コンボ専用アイテム（3つ揃うと大きな力・単体では無力。妨害目的で買われることも）
+  {id:54, name:'紅の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA1'},
+  {id:55, name:'蒼の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA2'},
+  {id:56, name:'金の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA3'},
+  // 特殊ダイス（面ごとに出目が異なる。価格が高いほど平均値も高い）
+  {id:57, name:'怪しいダイス', desc:'特殊ダイス追加。出目-5か+15（平均+1.7/個、永続）', price:15, rarity:'common', type:'customDieShady'},
+  {id:58, name:'賭けダイス', desc:'特殊ダイス追加。出目-10か+50（平均+20/個、永続）', price:120, rarity:'epic', type:'customDieGamble'},
+  {id:59, name:'黄金のダイス', desc:'特殊ダイス追加。出目+30〜+80、マイナスなし（平均+50/個、永続）', price:600, rarity:'legend', type:'customDieGolden'},
+  {id:38, name:'収集の力', desc:'所持アイテム総数に応じて出目が増加（永続・重ね掛け可、ガラクタも数に含む）', price:60, rarity:'epic', type:'collectorBonus'},
+  {id:5, name:'大きい目', desc:'最大出目+2（永続・重ね掛け可）', price:40, rarity:'rare', type:'maxUp'},
+  {id:51, name:'超大きい目', desc:'最大出目+4（永続・重ね掛け可）', price:90, rarity:'epic', type:'maxUp2'},
+  {id:52, name:'極大の目', desc:'最大出目+8（永続・重ね掛け可）', price:220, rarity:'legend', type:'maxUp4'},
+  {id:6, name:'目替えダイス', desc:'出目の範囲+1〜+1（永続・重ね掛け可）', price:35, rarity:'rare', type:'shiftRange'},
+  {id:53, name:'目替えダイス強化版', desc:'出目の範囲+2〜+2（永続・重ね掛け可）', price:80, rarity:'epic', type:'shiftRange2'},
+  {id:7, name:'コインブースト', desc:'ロールごとに+1コイン（永続）', price:6, rarity:'common', type:'coinBoost'},
+  {id:8, name:'値引き体質', desc:'ショップ価格-5%（永続、上限-50%）', price:8, rarity:'common', type:'priceDiscount'},
+  {id:9, name:'高速回転', desc:'回転時間を短縮（永続）', price:24, rarity:'rare', type:'spinReduce'},
+  // 防御系（永続）
+  {id:10, name:'妨害耐性', desc:'受ける妨害の持続-15%（上限-75%）', price:30, rarity:'rare', type:'debuffResist'},
+  {id:11, name:'経済耐性', desc:'受ける割高効果-20%（上限-80%）', price:9, rarity:'common', type:'econResist'},
+  {id:12, name:'盗難耐性', desc:'コイン強奪オーラを完全無効化', price:28, rarity:'rare', type:'immuneStealPerm'},
+  {id:13, name:'目視回避', desc:'フェイクオーラを完全無効化', price:6, rarity:'common', type:'immuneFakePerm'},
+  // 情報系（永続）
+  {id:14, name:'望遠鏡', desc:'常に相手の所持コインが見える', price:5, rarity:'common', type:'seeCoinsPerm'},
+  {id:15, name:'予兆センサー', desc:'常に次回入荷までの秒数が見える', price:5, rarity:'common', type:'seeRestockPerm'},
+  {id:16, name:'監視カメラ', desc:'自分を最後に攻撃した相手が常に見える', price:20, rarity:'rare', type:'revealAttackerPerm'},
+  {id:17, name:'先行入荷通知', desc:'次回入荷するアイテムを事前に確認できる', price:6, rarity:'common', type:'previewPerm'},
+  {id:18, name:'チェイン延長', desc:'CHAIN持続+1秒（上限+8秒）', price:26, rarity:'rare', type:'chainBonus'},
+  // 妨害オーラ系（永続・ロールのたびに確率で自動発動）
+  {id:19, name:'目潰しオーラ', desc:'確率で相手の最大出目を下げる', price:55, rarity:'epic', type:'auraMaxDown'},
+  {id:20, name:'ゲージ凍結オーラ', desc:'確率で相手のロールを止める', price:60, rarity:'epic', type:'auraFreeze'},
+  {id:21, name:'割高オーラ', desc:'確率で相手の価格を上げる', price:50, rarity:'epic', type:'auraPriceUp'},
+  {id:22, name:'棚荒らしオーラ', desc:'確率で棚を1枠ロックする', price:48, rarity:'epic', type:'auraShelfLock'},
+  {id:23, name:'コイン強奪オーラ', desc:'確率で相手のコインを少し奪う', price:52, rarity:'epic', type:'auraCoinSteal'},
+  {id:24, name:'フェイクオーラ', desc:'確率で相手に偽の表示を出す', price:20, rarity:'rare', type:'auraFakeBubble'},
+  // 経済・情報の追加ラインナップ
+  {id:25, name:'利息', desc:'10秒ごとに進捗の一部をコイン化', price:65, rarity:'epic', type:'interest'},
+  {id:26, name:'保険', desc:'妨害を受けるとコインを得る', price:7, rarity:'common', type:'insurance'},
+  {id:28, name:'偵察スコープ', desc:'相手のオーラ確率が常に見える', price:18, rarity:'rare', type:'scoutPerm'},
+  // ハズレ（買うとコインだけ失う）※見た目は通常アイテムと同じレアリティに偽装
+  {id:29, name:'ガラクタ', desc:'ただの石ころ。何も起きない', price:8, rarity:'common', type:'junk'},
+  {id:30, name:'怪しい壺', desc:'効果なし。完全に損', price:30, rarity:'common', type:'junk'},
+  {id:31, name:'偽物のダイス', desc:'見た目だけ。何も変わらない', price:60, rarity:'rare', type:'junk'},
+];
+
+const NAMES = ['あなた','CPU-A','CPU-B','CPU-C'];
+const GOAL = 9999;
+const SHOP_RESTOCK_MS = 18000;
+const MULT_SEQ = [1, 1.5, 2, 3, 4, 5, 6, 8, 10]; // オークションの倍率ステップ（上限10倍）
+const AUCTION_MS = 5000;
+const CHAIN_MS_DEFAULT = 5000;
+const ROLL_ANIM_MS = 550; // この回転時間そのものがクールタイムになる（高速化）
+
+function diceUpgradeCost(currentCount){
+  return 8 * Math.pow(4, currentCount-1); // 1個目:8 / 2個目:32 / 3個目:128 / 4個目:512 / 5個目:2048 ...
+}
+
+function unlockedRarities(progress){
+  if(progress < 250) return ['common'];
+  if(progress < 1000) return ['common','rare'];
+  if(progress < 2500) return ['common','rare','epic'];
+  return ['common','rare','epic','legend'];
+}
+function weightedItemPick(progress){
+  const allowed = unlockedRarities(progress);
+  const w = {common:5, rare:3, epic:2, legend:1};
+  const pool = [];
+  for(const it of ITEMS){ if(allowed.includes(it.rarity)){ for(let i=0;i<w[it.rarity];i++) pool.push(it); } }
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+// ---------- state ----------
+function newPlayer(id, name, isHuman){
+  return {
+    id, name, isHuman,
+    progress:0, coins:0,
+    diceCount:1, maxBonus:0, minBonus:0,
+    effects:{},
+    bubble:null, bubbleUntil:0,
+    lastAttackerBy:null,
+    aiTimer: 0,
+    rollAnim:{active:false, endsAt:0, startedAt:0, dur:0, disp:1},
+    busyUntil: 0,
+    spinReduction: 0,
+    purchaseCount: {},
+    lastRollTotal: null,
+    inventory: [],
+    coinBonusPerRoll: 0,
+    priceDiscount: 0,
+    debuffResist: 0,
+    econResist: 0,
+    chainBonusSec: 0,
+    auraProc: {},
+    interestRate: 0,
+    insuranceBonus: 0,
+    multiplierBonus: 0,
+    totalItemsOwned: 0,
+    collectorLevel: 0,
+    comboCount: 0,
+    flatRollBonus: 0,
+    comboPieces: {},
+    customDice: [],
+  };
+}
+
+let state = {
+  running:false,
+  players:[],
+  shop:{slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+SHOP_RESTOCK_MS},
+  chain:{type:null, expiresAt:0, excludeLeader:true},
+  log:[],
+  winner:null,
+  targetModal:null,
+  pendingSlot:null,
+  lastGlobalMaxRoll:0,
+};
+
+function addLog(text, cls){
+  state.log.push({text, cls: cls||'', t: Date.now()});
+  if(state.log.length>200) state.log.shift();
+  renderScroll(); // scrollArea only — never touches the self/roll button DOM
+}
+
+function initGame(){
+  state.players = [
+    newPlayer(0, NAMES[0], true),
+    newPlayer(1, NAMES[1], false),
+    newPlayer(2, NAMES[2], false),
+    newPlayer(3, NAMES[3], false),
+  ];
+  state.shop = {slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+SHOP_RESTOCK_MS, nextQuickRestock:Date.now()+QUICK_RESTOCK_MS, warned:false};
+  state.chain = {type:null, expiresAt:0, excludeLeader:true};
+  state.nextInterestAt = Date.now()+10000;
+  lastLeaderId = null;
+  lastSelfRank = null;
+  state.log = [];
+  state.winner = null;
+  state.targetModal = null;
+  state.pendingSlot = null;
+  state.running = true;
+  restockBatch(false);
+  buildSkeleton();
+  addLog('ゲーム開始。9999に最初に到達したプレイヤーの勝ち。');
+  updateSelfLive();
+}
+
+function getLeader(){
+  let best = state.players[0];
+  for(const p of state.players) if(p.progress > best.progress) best = p;
+  return best;
+}
+function isImmune(p, key){ return p.effects[key] && p.effects[key] > Date.now(); }
+
+function diceRange(p){
+  const min = 1 + p.minBonus;
+  let max = 6 + p.maxBonus;
+  if(p.effects.maxDownUntil && p.effects.maxDownUntil > Date.now()) max = Math.max(min, max - (p.effects.maxDownAmount||2));
+  return {min, max};
+}
+
+function chainLuckActive(p){
+  if(!state.chain.type || state.chain.type!=='luck') return false;
+  if(state.chain.expiresAt <= Date.now()) return false;
+  if(state.chain.excludeLeader && getLeader().id===p.id && countAtMax()<=1) return false;
+  return true;
+}
+function countAtMax(){
+  const m = Math.max(...state.players.map(p=>p.progress));
+  return state.players.filter(p=>p.progress===m).length;
+}
+function getRank(p){
+  // 進捗が高い順の順位。同点は同順位（1,2,2,4のように扱う）
+  const sorted = [...state.players].sort((a,b)=>b.progress-a.progress);
+  return sorted.findIndex(x=>x.id===p.id) + 1;
+}
+
+function rollOne(p){
+  const {min,max} = diceRange(p);
+  let base = min + Math.floor(Math.random()*(max-min+1));
+  if(chainLuckActive(p) && Math.random()<0.5){ base = Math.min(max, base+1); }
+  return {val:base, max};
+}
+
+function requestRoll(p){
+  if(state.winner) return;
+  const now = Date.now();
+  if(p.rollAnim.active) return;
+  if(now < p.busyUntil) return;
+  if(isImmune(p,'rollDisabledUntil') && p.effects.rollDisabledUntil>now){
+    addLog(`${p.name} はゲージ凍結中で振れない。`);
+    return;
+  }
+  const rawDur = ROLL_ANIM_MS + Math.random()*200;
+  const dur = Math.max(180, rawDur - (p.spinReduction||0));
+  p.rollAnim = {active:true, startedAt: now, endsAt: now+dur, dur, disp: 1+Math.floor(Math.random()*9)};
+  p.busyUntil = now + dur;
+  if(p.isHuman) updateSelfLive();
+}
+
+function compensate(t){
+  if(t.insuranceBonus){ t.coins += t.insuranceBonus; }
+}
+
+function finalizeRoll(p){
+  const dc = p.diceCount;
+  let rawTotal = 0;
+  let rolls = [];
+  for(let i=0;i<dc;i++){
+    let r = rollOne(p);
+    rolls.push(r.val);
+    rawTotal += r.val;
+  }
+  for(const faces of (p.customDice||[])){
+    const v = faces[Math.floor(Math.random()*faces.length)];
+    rolls.push(v);
+    rawTotal += v;
+  }
+  const collectorBonus = (p.collectorLevel||0) * Math.floor((p.totalItemsOwned||0)/2);
+  rawTotal += collectorBonus;
+  rawTotal += (p.flatRollBonus||0);
+  const comboMult = 1 + Math.min(p.comboCount||0, 40) * 0.15; // コンボが続くほど爆発的に増える（最大+6.0倍）
+  const total = Math.round(rawTotal * (1 + (p.multiplierBonus||0)) * comboMult);
+  p.lastRollTotal = total;
+
+  const prevMilestone = Math.floor(p.progress/1000);
+  p.progress = Math.min(GOAL, p.progress + total);
+  p.coins += total + (p.coinBonusPerRoll||0);
+  if(Math.floor(p.progress/1000) > prevMilestone){ sfxMilestone(); addLog(`${p.name} が ${Math.floor(p.progress/1000)*1000} を突破！`); }
+  if(total > state.lastGlobalMaxRoll){
+    state.lastGlobalMaxRoll = total;
+    triggerChain('luck', p);
+    p.comboCount = (p.comboCount||0) + 1;
+    if(p.comboCount>=2){
+      sfxCombo(p.comboCount);
+      addLog(`${p.name} が COMBO x${p.comboCount}！（出目×${comboMult.toFixed(2)}）`, 'win');
+      if(p.comboCount % 3 === 0){
+        const bonus = p.comboCount * 5;
+        p.coins += bonus;
+        addLog(`COMBO x${p.comboCount} ボーナス！${p.name}に+${bonus}コイン`, 'win');
+      }
+    }
+  } else {
+    p.comboCount = 0;
+  }
+  const bonusTxt = (p.multiplierBonus||comboMult>1) ? `（${rawTotal}→×${((1+(p.multiplierBonus||0))*comboMult).toFixed(2)}）` : '';
+  addLog(`${p.name} が [${rolls.join(',')}] で合計+${total}${bonusTxt}（進捗${p.progress}）`);
+  sfxRollResult(total);
+  if(p.isHuman) popRoll(total, p.comboCount);
+  triggerAuras(p);
+  const newLeader = getLeader();
+  if(newLeader.id !== lastLeaderId){ if(lastLeaderId!==null) sfxLeaderChange(); lastLeaderId = newLeader.id; }
+  if(p.progress >= GOAL){
+    state.winner = p;
+    addLog(`${p.name} が 9999 に到達！勝利！`, 'win');
+    sfxWin();
+    renderWin();
+  }
+}
+let lastLeaderId = null;
+function popRoll(total, combo){
+  const wrap = document.querySelector('#selfPanel .die-wrap');
+  if(!wrap) return;
+  const span = document.createElement('span');
+  span.className = 'roll-pop';
+  span.textContent = (combo>=2) ? `+${total} COMBO x${combo}` : '+'+total;
+  if(combo>=2) span.classList.add('combo');
+  wrap.appendChild(span);
+  setTimeout(()=>{ span.remove(); }, 780);
+}
+
+function triggerAuras(p){
+  if(!p.auraProc) return;
+  const others = state.players.filter(x=>x.id!==p.id);
+  if(others.length===0) return;
+  const now = Date.now();
+  let fired = false;
+  const pick = ()=> others[Math.floor(Math.random()*others.length)];
+  if(p.auraProc.maxDown && Math.random()<p.auraProc.maxDown){
+    const t = pick();
+    t.effects.maxDownUntil = now + 8000*(1-(t.debuffResist||0));
+    t.effects.maxDownAmount = 2; t.lastAttackerBy = p.name; compensate(t);
+    addLog(`${p.name}の目潰しオーラが${t.name}を襲った！`, 'atk'); fired = true;
+  }
+  if(p.auraProc.freeze && Math.random()<p.auraProc.freeze){
+    const t = pick();
+    t.effects.rollDisabledUntil = now + 2000*(1-(t.debuffResist||0));
+    t.lastAttackerBy = p.name; compensate(t);
+    addLog(`${p.name}のゲージ凍結オーラが${t.name}を止めた！`, 'atk'); fired = true;
+  }
+  if(p.auraProc.priceUp && Math.random()<p.auraProc.priceUp){
+    const t = pick();
+    t.effects.priceUpUntil = now + 10000*(1-(t.debuffResist||0));
+    t.lastAttackerBy = p.name; compensate(t);
+    addLog(`${p.name}の割高オーラが${t.name}を直撃！`, 'atk'); fired = true;
+  }
+  if(p.auraProc.shelfLock && Math.random()<p.auraProc.shelfLock){
+    const candidates = [0,1,2].filter(i=>!state.shop.auctions[i]);
+    if(candidates.length>0){
+      const idx = candidates[Math.floor(Math.random()*candidates.length)];
+      state.shop.lockedUntil[idx] = now + 8000;
+      addLog(`${p.name}の棚荒らしオーラが発動！`, 'atk'); fired = true;
+    }
+  }
+  if(p.auraProc.coinSteal && Math.random()<p.auraProc.coinSteal){
+    const t = pick();
+    if(t.effects.immuneStealPermanent){ if(t.isHuman) sfxImmuneBlock(); }
+    else {
+      const amount = Math.max(1, Math.round(t.coins * 0.15 * (1-(t.debuffResist||0))));
+      t.coins = Math.max(0, t.coins - amount);
+      p.coins += amount;
+      t.lastAttackerBy = p.name;
+      addLog(`${p.name}のコイン強奪オーラが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true;
+    }
+  }
+  if(p.auraProc.fakeBubble && Math.random()<p.auraProc.fakeBubble){
+    const t = pick();
+    if(t.effects.immuneFakePermanent){ if(t.isHuman) sfxImmuneBlock(); }
+    else {
+      t.bubble = '？？？'; t.bubbleUntil = now+4000; t.lastAttackerBy = p.name; compensate(t); fired = true;
+    }
+  }
+  if(fired) sfxAura();
+}
+
+// fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
+setInterval(()=>{
+  if(!state.running) return;
+  const now = Date.now();
+  for(const p of state.players){
+    if(p.rollAnim.active){
+      if(now >= p.rollAnim.endsAt){
+        p.rollAnim.active = false;
+        finalizeRoll(p);
+      } else {
+        p.rollAnim.disp = 1+Math.floor(Math.random()*9);
+        sfxRollTick();
+      }
+    }
+  }
+  updateSelfLive();
+  updateOppLive();
+}, 60);
+
+function triggerChain(type, player){
+  const bonusSec = player ? (player.chainBonusSec||0) : 0;
+  const dur = CHAIN_MS_DEFAULT + bonusSec*1000;
+  state.chain = {type, expiresAt: Date.now()+dur, excludeLeader:true};
+  renderScroll();
+}
+
+// ---------- shop ----------
+const QUICK_RESTOCK_MS = 5000;
+
+function rollPreviewBatch(){
+  const gameProgress = Math.max(...state.players.map(p=>p.progress), 0);
+  const preview = [];
+  for(let i=0;i<3;i++){
+    let item;
+    if(Math.random()<0.18){
+      const pool = ITEMS.filter(it=>it.rarity==='epic'||it.rarity==='legend');
+      item = pool[Math.floor(Math.random()*pool.length)];
+    } else {
+      item = weightedItemPick(gameProgress);
+    }
+    preview.push(item);
+  }
+  return preview;
+}
+
+function restockBatch(onlyEmpty){
+  const now = Date.now();
+  const gameProgress = Math.max(...state.players.map(p=>p.progress), 0);
+  let count = 0;
+  let jackpot = false;
+  const preview = (!onlyEmpty) ? (state.shop.preview || rollPreviewBatch()) : null;
+  for(let i=0;i<3;i++){
+    if(state.shop.lockedUntil[i] > now) continue;
+    if(state.shop.auctions[i]) continue; // 入札中の枠は補充で潰さない
+    if(onlyEmpty && state.shop.slots[i] !== null) continue;
+    let item;
+    if(!onlyEmpty){
+      item = preview[i];
+      if(item.rarity==='epic'||item.rarity==='legend') jackpot = true;
+    } else {
+      item = weightedItemPick(gameProgress);
+    }
+    state.shop.slots[i] = {...item};
+    count++;
+  }
+  if(!onlyEmpty){ state.shop.preview = rollPreviewBatch(); }
+  if(count>0){
+    if(jackpot){ addLog(`棚に高額アイテムが混ざって入荷した！`, 'win'); sfxJackpot(); }
+    else { addLog(onlyEmpty ? `棚に${count}個、追加で入荷しました。` : `棚が一斉に補充されました（${count}個）。`); sfxRestock(); }
+  }
+}
+
+function bulkDiceCost(currentCount, n, premium){
+  let sum = 0;
+  for(let i=0;i<n;i++){ sum += diceUpgradeCost(currentCount+i); }
+  return Math.round(sum * premium);
+}
+
+function priceFor(p, item){
+  let price;
+  if(item.type==='addDice') price = diceUpgradeCost(p.diceCount);
+  else if(item.type==='addDice2') price = bulkDiceCost(p.diceCount, 2, 1.3);
+  else if(item.type==='addDice3') price = bulkDiceCost(p.diceCount, 3, 1.4);
+  else if(item.type==='addDice5') price = bulkDiceCost(p.diceCount, 5, 1.6);
+  else price = item.price;
+  if(item.type!=='addDice' && item.type!=='addDice2' && item.type!=='addDice3' && item.type!=='addDice5'){
+    const cnt = p.purchaseCount[item.type] || 0;
+    price = Math.round(price * Math.pow(1.55, cnt)); // 同じ種類を買うほど値上がり
+  }
+  if(p.effects.priceUpUntil && p.effects.priceUpUntil>Date.now()){
+    price = Math.round(price * (1 + 0.3*(1-(p.econResist||0))));
+  }
+  if(p.priceDiscount){ price = Math.round(price * (1-p.priceDiscount)); }
+  if(state.chain.type==='discount' && state.chain.expiresAt>Date.now()){
+    const leader = getLeader();
+    if(!(state.chain.excludeLeader && leader.id===p.id && countAtMax()<=1)) price = Math.round(price*0.85);
+  }
+  return Math.max(0, price);
+}
+
+function startAuction(p, slotIdx){
+  if(state.winner) return;
+  const item = state.shop.slots[slotIdx];
+  if(!item || state.shop.lockedUntil[slotIdx] > Date.now() || state.shop.auctions[slotIdx]) return;
+  const basePrice = priceFor(p, item);
+  const price = Math.round(basePrice * MULT_SEQ[0]);
+  if(p.coins < price) { addLog(`${p.name} はコインが足りず入札できなかった。`); sfxFail(); return; }
+  state.shop.auctions[slotIdx] = { bidder: p.id, tier: 0, basePrice, deadline: Date.now()+AUCTION_MS };
+  addLog(`${p.name} が「${item.name}」に${price}コインで入札！誰か競る？（5秒）`);
+  sfxBidStart();
+  renderScroll();
+}
+
+function raiseAuction(p, slotIdx, targetTier){
+  if(state.winner) return;
+  const auc = state.shop.auctions[slotIdx];
+  const item = state.shop.slots[slotIdx];
+  if(!auc || !item || auc.bidder === p.id) return;
+  const tier = (targetTier!==undefined) ? targetTier : auc.tier + 1;
+  if(tier <= auc.tier || tier >= MULT_SEQ.length) return;
+  const price = Math.round(auc.basePrice * MULT_SEQ[tier]);
+  if(p.coins < price) { if(p.isHuman){ addLog(`${p.name} はコインが足りず競り負けた。`); sfxFail(); } return; }
+  auc.bidder = p.id;
+  auc.tier = tier;
+  auc.deadline = Date.now()+AUCTION_MS;
+  addLog(`${p.name} が${MULT_SEQ[tier]}倍（${price}コイン）で競り上げた！`);
+  sfxBidRaise(tier);
+  renderScroll();
+}
+
+function resolveAuctionSlot(slotIdx){
+  const auc = state.shop.auctions[slotIdx];
+  if(!auc) return;
+  const item = state.shop.slots[slotIdx];
+  state.shop.auctions[slotIdx] = null;
+  if(!item) return;
+  const bidder = state.players.find(x=>x.id===auc.bidder);
+  if(!bidder){ state.shop.slots[slotIdx] = null; return; }
+  const price = Math.round(auc.basePrice * MULT_SEQ[auc.tier]);
+  if(bidder.coins < price){
+    addLog(`${bidder.name} は支払えず「${item.name}」の落札が流れた…`, 'atk');
+    state.shop.slots[slotIdx] = null;
+    sfxFail();
+    renderScroll();
+    return;
+  }
+  bidder.coins -= price;
+  state.shop.slots[slotIdx] = null;
+  bidder.purchaseCount[item.type] = (bidder.purchaseCount[item.type]||0) + 1;
+  bidder.totalItemsOwned = (bidder.totalItemsOwned||0) + 1;
+  bidder.inventory.push({name:item.name, rarity:item.rarity, desc:item.desc});
+  if(bidder.inventory.length>50) bidder.inventory.shift();
+  if(item.type==='junk'){
+    addLog(`${bidder.name} が「${item.name}」を${price}コインで落札…完全な無駄だった`, 'atk');
+    sfxFail();
+  } else {
+    applyEffect(bidder, item);
+    addLog(`${bidder.name} が「${item.name}」を${price}コインで落札！`, 'win');
+    sfxAuctionWin();
+  }
+  triggerChain('discount', bidder);
+  renderScroll();
+}
+
+function checkComboSetA(p){
+  if(p.comboPieces.a1 && p.comboPieces.a2 && p.comboPieces.a3 && !p.effects.comboSetAComplete){
+    p.effects.comboSetAComplete = true;
+    p.multiplierBonus = (p.multiplierBonus||0) + 9.0; // 実質10倍
+    addLog(`${p.name} が三色の欠片を揃えた！合計出目が実質10倍に！`, 'win');
+    sfxJackpot();
+  }
+}
+
+function applyEffect(p, item){
+  const now = Date.now();
+  switch(item.type){
+    case 'addDice': p.diceCount += 1; break;
+    case 'maxUp': p.maxBonus += 2; break;
+    case 'maxUp2': p.maxBonus += 4; break;
+    case 'maxUp4': p.maxBonus += 8; break;
+    case 'shiftRange': p.minBonus += 1; p.maxBonus += 1; break;
+    case 'shiftRange2': p.minBonus += 2; p.maxBonus += 2; break;
+    case 'coinBoost': p.coinBonusPerRoll = (p.coinBonusPerRoll||0) + 1; break;
+    case 'priceDiscount': p.priceDiscount = Math.min(0.5, (p.priceDiscount||0) + 0.05); break;
+    case 'spinReduce': p.spinReduction = Math.min(900, (p.spinReduction||0) + 300); break;
+    case 'debuffResist': p.debuffResist = Math.min(0.75, (p.debuffResist||0) + 0.15); break;
+    case 'econResist': p.econResist = Math.min(0.8, (p.econResist||0) + 0.2); break;
+    case 'immuneStealPerm': p.effects.immuneStealPermanent = true; break;
+    case 'immuneFakePerm': p.effects.immuneFakePermanent = true; break;
+    case 'seeCoinsPerm': p.effects.seeCoinsPermanent = true; break;
+    case 'seeRestockPerm': p.effects.seeRestockPermanent = true; break;
+    case 'revealAttackerPerm': p.effects.revealAttackerPermanent = true; break;
+    case 'previewPerm': p.effects.previewPermanent = true; break;
+    case 'chainBonus': p.chainBonusSec = Math.min(8, (p.chainBonusSec||0) + 1); break;
+    case 'auraMaxDown': p.auraProc.maxDown = Math.min(0.42, (p.auraProc.maxDown||0) + 0.06); break;
+    case 'auraFreeze': p.auraProc.freeze = Math.min(0.35, (p.auraProc.freeze||0) + 0.05); break;
+    case 'auraPriceUp': p.auraProc.priceUp = Math.min(0.42, (p.auraProc.priceUp||0) + 0.06); break;
+    case 'auraShelfLock': p.auraProc.shelfLock = Math.min(0.35, (p.auraProc.shelfLock||0) + 0.05); break;
+    case 'auraCoinSteal': p.auraProc.coinSteal = Math.min(0.42, (p.auraProc.coinSteal||0) + 0.06); break;
+    case 'auraFakeBubble': p.auraProc.fakeBubble = Math.min(0.56, (p.auraProc.fakeBubble||0) + 0.08); break;
+    case 'interest': p.interestRate = Math.min(0.03, (p.interestRate||0) + 0.005); break;
+    case 'insurance': p.insuranceBonus = (p.insuranceBonus||0) + 5; break;
+    case 'scoutPerm': p.effects.scoutPermanent = true; break;
+    case 'multiplier': p.multiplierBonus = (p.multiplierBonus||0) + 0.1; break; // 上限なし（価格の指数上昇が自然なブレーキになる）
+    case 'multiplierBig': p.multiplierBonus = (p.multiplierBonus||0) + 9.0; break; // 一撃で実質10倍
+    case 'flatBonus': p.flatRollBonus = (p.flatRollBonus||0) + (item.amount||0); break;
+    case 'multiplierJump': p.multiplierBonus = (p.multiplierBonus||0) + (item.amount||0); break;
+    case 'comboPieceA1': p.comboPieces.a1 = true; checkComboSetA(p); break;
+    case 'comboPieceA2': p.comboPieces.a2 = true; checkComboSetA(p); break;
+    case 'comboPieceA3': p.comboPieces.a3 = true; checkComboSetA(p); break;
+    case 'customDieShady': p.customDice.push([-5,-5,-5,-5,15,15]); break;
+    case 'customDieGamble': p.customDice.push([-10,-10,-10,50,50,50]); break;
+    case 'customDieGolden': p.customDice.push([30,30,40,40,80,80]); break;
+    case 'addDice2': p.diceCount += 2; break;
+    case 'addDice3': p.diceCount += 3; break;
+    case 'addDice5': p.diceCount += 5; break;
+    case 'collectorBonus': p.collectorLevel = Math.min(20, (p.collectorLevel||0) + 1); break;
+  }
+}
+
+// ---------- game tick (shop timers / AI decisions) ----------
+setInterval(()=>{
+  if(!state.running || state.winner) return;
+  const now = Date.now();
+  if(!state.shop.warned && state.shop.nextRestock - now <= 5000 && state.shop.nextRestock - now > 4700){
+    addLog('まもなく棚が一斉に補充されるぞ！');
+    sfxRestockWarn();
+    state.shop.warned = true;
+  }
+  if(now >= state.shop.nextRestock){
+    restockBatch(false);
+    state.shop.nextRestock = now + SHOP_RESTOCK_MS;
+    state.shop.warned = false;
+  }
+  if(now >= (state.shop.nextQuickRestock||0)){
+    restockBatch(true);
+    state.shop.nextQuickRestock = now + QUICK_RESTOCK_MS;
+  }
+  if(now >= (state.nextInterestAt||0)){
+    for(const p of state.players){
+      if(p.interestRate){ p.coins += Math.max(1, Math.round(p.progress * p.interestRate)); }
+    }
+    state.nextInterestAt = now + 10000;
+  }
+  for(let i=0;i<3;i++){
+    const auc = state.shop.auctions[i];
+    if(auc && now >= auc.deadline){ resolveAuctionSlot(i); }
+  }
+  for(const p of state.players){ if(p.bubbleUntil && now>p.bubbleUntil){ p.bubble=null; p.bubbleUntil=0; } }
+  if(state.chain.type && state.chain.expiresAt<=now){ state.chain.type=null; }
+
+  for(const p of state.players){
+    if(p.isHuman) continue;
+    p.aiTimer -= 200;
+    if(p.aiTimer<=0){
+      p.aiTimer = 250 + Math.random()*450;
+      aiAct(p);
+    }
+  }
+  renderScroll(); // cheap: never touches the self roll button
+}, 200);
+
+function aiAct(p){
+  if(state.winner) return;
+  // 棚はオークション制。入札 or 競り上げをたまに試みる（ガラクタも稀に踏む）
+  if(Math.random()<0.13){
+    const now = Date.now();
+    const candidates = [];
+    for(let i=0;i<3;i++){
+      const it = state.shop.slots[i];
+      if(!it || state.shop.lockedUntil[i] > now) continue;
+      const auc = state.shop.auctions[i];
+      if(!auc){
+        const price = Math.round(priceFor(p, it) * MULT_SEQ[0]);
+        if(p.coins >= price) candidates.push({idx:i, action:'start', junk: it.type==='junk'});
+      } else if(auc.bidder !== p.id){
+        const timeSinceLastBid = AUCTION_MS - (auc.deadline - now);
+        if(timeSinceLastBid < 1500) continue; // 直後は少し様子見（人間の反応時間を確保）
+        const nextTier = auc.tier + 1;
+        if(nextTier < MULT_SEQ.length){
+          const price = Math.round(auc.basePrice * MULT_SEQ[nextTier]);
+          if(p.coins >= price) candidates.push({idx:i, action:'raise', junk: it.type==='junk'});
+        }
+      }
+    }
+    if(candidates.length>0){
+      const goodOnes = candidates.filter(c=>!c.junk);
+      const pool = (goodOnes.length>0 && Math.random()<0.9) ? goodOnes : candidates;
+      const pick = pool[Math.floor(Math.random()*pool.length)];
+      if(pick.action==='start') startAuction(p, pick.idx); else raiseAuction(p, pick.idx);
+      return;
+    }
+  }
+  requestRoll(p);
+}
+
+// ---------- rendering ----------
+function fmt(n){ return n.toString().padStart(4,'0'); }
+
+function buildSkeleton(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="title">
+      <h1>9999</h1>
+      <button class="reset" onclick="uiReset()">RESET</button>
+    </div>
+    <div id="scrollArea"></div>
+    <div id="invPanel" class="panel">
+      <h2>ITEMS ／ 所持アイテム</h2>
+      <div class="inventory-row" id="invRow"><span class="inv-empty">まだアイテムを持っていません</span></div>
+      <div class="inv-tip" id="invTip"></div>
+    </div>
+    <div id="selfPanel">
+      <div class="self-row">
+        <div class="die-wrap">
+          <div class="dice-dots" id="diceDots"></div>
+          <div class="big-die" id="bigDie">●</div>
+        </div>
+        <div class="self-info">
+          <div class="self-name" id="selfName">あなた</div>
+          <div class="progress-wrap"><div class="progress-fill" id="selfProgFill" style="width:0%"></div><div class="progress-label mono" id="selfProgLabel">0000 / 9999</div></div>
+          <div class="stat-row"><span>コイン: <b class="mono" id="selfCoins">0</b></span><span>ダイス範囲: <b class="mono" id="selfRange">1-6</b></span><span>ボーナス: <b class="mono" id="selfBonus">+0</b></span></div>
+        </div>
+      </div>
+      <button class="roll-btn" id="rollBtn">サイコロを振る</button>
+      <div class="cooldown-bar-wrap"><div class="cooldown-bar-fill" id="cdFill" style="width:100%"></div></div>
+      <div class="cooldown-label" id="cdLabel">準備完了 — 振れます</div>
+      <div class="info-badges" id="selfBadges"></div>
+    </div>
+  `;
+  const btn = document.getElementById('rollBtn');
+  const fire = (e)=>{ e.preventDefault(); ensureAudio(); requestRoll(state.players[0]); };
+  btn.addEventListener('pointerdown', fire, {passive:false});
+}
+
+// scrollArea: opponents / chain / shop / log — freely rebuilt, never touches selfPanel or rollBtn
+function renderScroll(){
+  const box = document.getElementById('scrollArea');
+  if(!box) return;
+  const human = state.players[0];
+  const leader = getLeader();
+  const opponents = state.players.slice(1);
+  const now = Date.now();
+
+  let html = '';
+
+  // opponents
+  const OPP_COLORS = ['var(--red)','var(--blue)','var(--yellow)'];
+  html += `<div class="panel role-opp"><h2>OPPONENTS</h2><div class="opp-grid">`;
+  opponents.forEach((p, idx)=>{
+    const oc = OPP_COLORS[idx % OPP_COLORS.length];
+    const isLeader = leader.id===p.id;
+    const rank = getRank(p);
+    let auraTotal = 0;
+    if(human.effects.scoutPermanent && p.auraProc){ auraTotal = Object.values(p.auraProc).reduce((s,v)=>s+v,0); }
+    html += `<div class="opp-card ${isLeader?'leader':''}" style="border-color:${oc}">
+      <div class="rank-badge" style="border-color:${oc};color:${oc}">${rank}位</div>
+      ${p.bubble && now<p.bubbleUntil ? `<div class="bubble">${p.bubble}</div>` : ''}
+      <div class="opp-name" style="color:${oc}">${p.name}</div>
+      <div class="opp-die mono ${p.rollAnim.active?'spin':''}" id="oppDie-${p.id}" style="border-color:${oc};color:${oc}">${p.rollAnim.active ? p.rollAnim.disp : '●'}</div>
+      <div class="opp-bar"><div class="opp-bar-fill" style="width:${Math.min(100,p.progress/GOAL*100)}%;background:${oc}"></div></div>
+      <div class="opp-score mono">${fmt(p.progress)}${human.effects.seeCoinsPermanent?` ／ ${p.coins}C`:''}</div>
+      ${auraTotal>0 ? `<div class="opp-score mono">オーラ計${Math.round(auraTotal*100)}%</div>` : ''}
+    </div>`;
+  });
+  html += `</div></div>`;
+
+  // chain + latest event ticker (log folded in here)
+  const chainActive = state.chain.type && state.chain.expiresAt>now;
+  const chainLabel = state.chain.type==='luck' ? '幸運チェイン（高出目で確率上昇）' : state.chain.type==='discount' ? '値引きチェイン（購入で割引）' : '待機中';
+  const lastEntry = state.log[state.log.length-1];
+  html += `<div class="panel role-chain ${chainActive?'chain-live':''}"><div class="chain-box">
+    <div class="chain-dot ${chainActive?'active':''}"></div>
+    <div class="chain-text"><b>CHAIN:</b> ${chainLabel} ${chainActive?`（残り${Math.ceil((state.chain.expiresAt-now)/1000)}秒・1位除く）`:''}</div>
+  </div>
+  <div class="ticker ${lastEntry?lastEntry.cls:''}">${lastEntry ? lastEntry.text : '——'}</div>
+  </div>`;
+
+  // shop — オークション制（購入を押すと入札スタート、他の人が競れる）
+  html += `<div class="panel role-shop"><h2>SHOP（オークション制）</h2>`;
+  if(human.effects.seeRestockPermanent){ html += `<div class="shop-status"><span class="mono">次回入荷まで ${Math.max(0,Math.ceil((state.shop.nextRestock-now)/1000))}秒</span></div>`; }
+  if(human.effects.previewPermanent && state.shop.preview){
+    html += `<div class="shop-status"><span>次回入荷予告: ${state.shop.preview.map(it=>it.name).join(' ／ ')}</span></div>`;
+  }
+  html += `<div class="shop-slots">`;
+  for(let i=0;i<3;i++){
+    const item = state.shop.slots[i];
+    const isLocked = state.shop.lockedUntil[i] > now;
+    const auc = state.shop.auctions[i];
+    if(isLocked){
+      html += `<div class="slot locked"><div class="empty">LOCKED<br>(${Math.ceil((state.shop.lockedUntil[i]-now)/1000)}s)</div></div>`;
+    } else if(!item){
+      html += `<div class="slot"><div class="empty">空き棚</div></div>`;
+    } else {
+      const rar = RARITY[item.rarity];
+      if(auc){
+        const bidder = state.players.find(x=>x.id===auc.bidder);
+        const curPrice = Math.round(auc.basePrice * MULT_SEQ[auc.tier]);
+        const remain = Math.max(0, Math.ceil((auc.deadline-now)/1000));
+        const isMe = bidder && bidder.id===human.id;
+        const nextTier = auc.tier + 1;
+        let btnHtml;
+        if(isMe){
+          btnHtml = `<button disabled>YOU LEAD ／ 自分が最高額</button>`;
+        } else if(nextTier < MULT_SEQ.length){
+          const tp = Math.round(auc.basePrice * MULT_SEQ[nextTier]);
+          const can = human.coins >= tp;
+          btnHtml = `<button ${can?'':'disabled'} data-action="raise" data-slot="${i}" data-tier="${nextTier}">x${MULT_SEQ[nextTier]} BID ／ ${MULT_SEQ[nextTier]}倍で競る（${tp}C）</button>`;
+        } else {
+          btnHtml = `<button disabled>MAX ／ 上限到達</button>`;
+        }
+        html += `<div class="slot auction ${isMe?'mine':''}" style="border-color:${isMe?'var(--blue)':rar.color}">
+          <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
+          <div class="iname">${item.name}</div>
+          <div class="idesc">${item.desc}</div>
+          <div class="idesc" style="color:${isMe?'var(--blue)':rar.color};font-weight:700;">${isMe?'あなたが入札中！':'BIDDING ／ '+(bidder?bidder.name:'?')+'が入札中'}・残り${remain}秒</div></div>
+          <div><div class="price-big mono" style="color:${isMe?'var(--blue)':rar.color}">${curPrice}C</div>
+          ${btnHtml}</div>
+        </div>`;
+      } else {
+        const price = Math.round(priceFor(human, item) * MULT_SEQ[0]);
+        const canBuy = human.coins>=price;
+        html += `<div class="slot" style="border-color:${rar.color}">
+          <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
+          <div class="iname">${item.name}</div>
+          <div class="idesc">${item.desc}</div></div>
+          <div><div class="price-big mono" style="color:${rar.color}">${price}C</div>
+          <button ${canBuy?'':'disabled'} data-action="buy" data-slot="${i}">BID ／ 入札する</button></div>
+        </div>`;
+      }
+    }
+  }
+  html += `</div>`;
+  html += `</div>`;
+
+  box.innerHTML = html;
+
+  if(state.targetModal!==null) renderTargetModal();
+}
+
+// self panel: mutate existing nodes only — button/bigDie are NEVER recreated
+function updateSelfLive(){
+  const human = state.players[0];
+  const now = Date.now();
+  const leader = getLeader();
+  const spinning = human.rollAnim.active;
+  const frozen = human.effects.rollDisabledUntil>now;
+
+  const bigDie = document.getElementById('bigDie');
+  if(bigDie){
+    bigDie.textContent = spinning ? human.rollAnim.disp : (human.lastRollTotal!=null ? human.lastRollTotal : '●');
+    bigDie.className = 'big-die' + (spinning?' spin':'');
+  }
+  const dotsEl = document.getElementById('diceDots');
+  if(dotsEl){
+    dotsEl.innerHTML = human.diceCount>1 ? '<span class="dot"></span>'.repeat(human.diceCount) : '';
+  }
+  const nameEl = document.getElementById('selfName');
+  const rank = getRank(human);
+  if(nameEl) nameEl.textContent = `${human.name}（${rank}位）`;
+  if(rank !== lastSelfRank){
+    if(lastSelfRank!==null){ if(rank<lastSelfRank) sfxRankUp(); else sfxRankDown(); }
+    lastSelfRank = rank;
+  }
+
+  const fill = document.getElementById('selfProgFill');
+  const label = document.getElementById('selfProgLabel');
+  if(fill) fill.style.width = Math.min(100, human.progress/GOAL*100)+'%';
+  if(label) label.textContent = fmt(human.progress)+' / 9999';
+
+  const coinsEl = document.getElementById('selfCoins');
+  if(coinsEl) coinsEl.textContent = human.coins;
+  const rangeEl = document.getElementById('selfRange');
+  if(rangeEl){ const r = diceRange(human); rangeEl.textContent = r.min+'-'+r.max; }
+  const bonusEl = document.getElementById('selfBonus');
+  if(bonusEl){ bonusEl.textContent = '+'+(human.flatRollBonus||0); }
+
+  const btn = document.getElementById('rollBtn');
+  const cdFill = document.getElementById('cdFill');
+  const cdLabel = document.getElementById('cdLabel');
+  if(btn){
+    let disabled = !!state.winner || frozen || spinning;
+    btn.disabled = disabled;
+    if(frozen){ btn.textContent = '凍結中...'; btn.className='roll-btn cooldown'; }
+    else if(spinning){ btn.textContent = `${human.rollAnim.disp} ...`; btn.className='roll-btn'; }
+    else { btn.textContent = 'サイコロを振る'; btn.className='roll-btn'; }
+  }
+  if(cdFill && cdLabel){
+    if(frozen){ cdFill.style.width='0%'; cdFill.className='cooldown-bar-fill frozen'; cdLabel.textContent='ゲージ凍結中'; }
+    else if(spinning){
+      const frac = Math.min(1, (now-human.rollAnim.startedAt)/human.rollAnim.dur);
+      cdFill.style.width = (frac*100)+'%';
+      cdFill.className='cooldown-bar-fill spinning';
+      cdLabel.textContent = '回転中（＝クールタイム）...' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:'');
+    } else {
+      cdFill.style.width='100%';
+      cdFill.className='cooldown-bar-fill';
+      cdLabel.textContent = '準備完了 — 振れます' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:'');
+    }
+  }
+  const badgesEl = document.getElementById('selfBadges');
+  if(badgesEl) badgesEl.innerHTML = renderBadges(human, now);
+
+  // purchased items — simple chip list at top of self window, tap for a speech-bubble tip
+  const invEl = document.getElementById('invRow');
+  if(invEl){
+    if(human.inventory.length===0){
+      invEl.innerHTML = '<span class="inv-empty">まだアイテムを持っていません</span>';
+    } else {
+      invEl.innerHTML = human.inventory.map((it,idx)=>{
+        const c = RARITY[it.rarity].color;
+        return `<span class="inv-chip" style="border-color:${c};color:${c}" onclick="showInvTip(this, ${idx})">${it.name}</span>`;
+      }).join('');
+    }
+  }
+}
+
+let invTipTimer = null;
+let lastSelfRank = null;
+function showInvTip(el, idx){
+  const human = state.players[0];
+  const item = human.inventory[idx];
+  const tip = document.getElementById('invTip');
+  const panel = document.getElementById('invPanel');
+  if(!item || !tip || !panel) return;
+  tip.textContent = item.desc;
+  const panelRect = panel.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  tip.style.left = Math.max(4, elRect.left - panelRect.left) + 'px';
+  tip.style.top = (elRect.top - panelRect.top - 8) + 'px';
+  tip.style.transform = 'translateY(-100%)';
+  tip.classList.add('show');
+  clearTimeout(invTipTimer);
+  invTipTimer = setTimeout(()=> tip.classList.remove('show'), 2600);
+}
+
+function updateOppLive(){
+  for(const p of state.players){
+    if(p.isHuman) continue;
+    const el = document.getElementById('oppDie-'+p.id);
+    if(el){
+      el.textContent = p.rollAnim.active ? p.rollAnim.disp : '●';
+      el.className = 'opp-die mono' + (p.rollAnim.active?' spin':'');
+    }
+  }
+}
+
+function renderBadges(p, now){
+  let b='';
+  // 一時的な状態（受けている妨害など）
+  if(p.effects.priceUpUntil>now) b+=`<span class="badge debuff">割高中</span>`;
+  if(p.effects.maxDownUntil>now) b+=`<span class="badge debuff">目潰し中</span>`;
+  if(p.effects.rollDisabledUntil>now) b+=`<span class="badge debuff">凍結中</span>`;
+  if(p.effects.revealAttackerPermanent && p.lastAttackerBy) b+=`<span class="badge">最終攻撃者:${p.lastAttackerBy}</span>`;
+  // 永続ステータス
+  if(p.diceCount>1) b+=`<span class="badge">ダイス×${p.diceCount}</span>`;
+  if(p.maxBonus>0||p.minBonus>0) b+=`<span class="badge">出目+${p.minBonus}/+${p.maxBonus}</span>`;
+  if(p.coinBonusPerRoll>0) b+=`<span class="badge">コイン+${p.coinBonusPerRoll}/回</span>`;
+  if(p.priceDiscount>0) b+=`<span class="badge">値引-${Math.round(p.priceDiscount*100)}%</span>`;
+  if(p.spinReduction>0) b+=`<span class="badge">回転-${p.spinReduction}ms</span>`;
+  if(p.debuffResist>0) b+=`<span class="badge buff">妨害耐性${Math.round(p.debuffResist*100)}%</span>`;
+  if(p.econResist>0) b+=`<span class="badge buff">経済耐性${Math.round(p.econResist*100)}%</span>`;
+  if(p.effects.immuneStealPermanent) b+=`<span class="badge buff">盗難耐性</span>`;
+  if(p.effects.immuneFakePermanent) b+=`<span class="badge buff">目視回避</span>`;
+  if(p.chainBonusSec>0) b+=`<span class="badge">CHAIN+${p.chainBonusSec}秒</span>`;
+  if(p.multiplierBonus>0) b+=`<span class="badge">出目×${(1+p.multiplierBonus).toFixed(1)}</span>`;
+  if(p.flatRollBonus>0) b+=`<span class="badge">出目+${p.flatRollBonus}/回</span>`;
+  if(p.customDice && p.customDice.length>0) b+=`<span class="badge">特殊ダイス×${p.customDice.length}</span>`;
+  if(p.comboPieces && (p.comboPieces.a1||p.comboPieces.a2||p.comboPieces.a3) && !p.effects.comboSetAComplete){
+    const got = ['a1','a2','a3'].filter(k=>p.comboPieces[k]).length;
+    b+=`<span class="badge">欠片${got}/3</span>`;
+  }
+  if(p.effects.comboSetAComplete) b+=`<span class="badge combo-badge">欠片コンプ！×10</span>`;
+  if(p.collectorLevel>0) b+=`<span class="badge">収集の力+${(p.collectorLevel||0)*Math.floor((p.totalItemsOwned||0)/3)}（所持${p.totalItemsOwned||0}）</span>`;
+  if(p.comboCount>=2) b+=`<span class="badge combo-badge">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,12)*0.08).toFixed(2)}）</span>`;
+  if(p.interestRate>0) b+=`<span class="badge">利息${(p.interestRate*100).toFixed(1)}%</span>`;
+  if(p.insuranceBonus>0) b+=`<span class="badge buff">保険+${p.insuranceBonus}</span>`;
+  if(p.effects.scoutPermanent) b+=`<span class="badge buff">偵察</span>`;
+  if(p.auraProc){
+    if(p.auraProc.maxDown) b+=`<span class="badge debuff">目潰しオーラ${Math.round(p.auraProc.maxDown*100)}%</span>`;
+    if(p.auraProc.freeze) b+=`<span class="badge debuff">凍結オーラ${Math.round(p.auraProc.freeze*100)}%</span>`;
+    if(p.auraProc.priceUp) b+=`<span class="badge debuff">割高オーラ${Math.round(p.auraProc.priceUp*100)}%</span>`;
+    if(p.auraProc.shelfLock) b+=`<span class="badge debuff">棚荒らし${Math.round(p.auraProc.shelfLock*100)}%</span>`;
+    if(p.auraProc.coinSteal) b+=`<span class="badge debuff">強奪${Math.round(p.auraProc.coinSteal*100)}%</span>`;
+    if(p.auraProc.fakeBubble) b+=`<span class="badge debuff">フェイク${Math.round(p.auraProc.fakeBubble*100)}%</span>`;
+  }
+  return b;
+}
+
+function renderTargetModal(){
+  const item = ITEMS.find(i=>i.id===state.targetModal);
+  const others = state.players.filter(p=>p.id!==0);
+  let html = `<div class="overlay"><div class="modal"><h3>「${item.name}」の対象を選択</h3>`;
+  for(const o of others){ html += `<button onclick="uiConfirmTarget(${o.id})">${o.name}</button>`; }
+  html += `<button class="cancel" onclick="uiCancelTarget()">キャンセル</button></div></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+function renderWin(){
+  const html = `<div class="win-overlay"><div style="color:var(--sub);letter-spacing:3px;font-size:11px;margin-bottom:8px">WINNER</div><h1>${state.winner.name}</h1><button onclick="uiReset()">もう一度</button></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+
+// ---------- UI handlers ----------
+function uiBuy(slotIdx){
+  const p = state.players[0];
+  const item = state.shop.slots[slotIdx];
+  if(!item) return;
+  const auc = state.shop.auctions[slotIdx];
+  if(!auc){
+    startAuction(p, slotIdx);
+  }
+}
+function uiRaiseTo(slotIdx, tier){
+  raiseAuction(state.players[0], slotIdx, tier);
+}
+function uiConfirmTarget(targetId){
+  state.targetModal = null;
+  renderScroll();
+}
+function uiCancelTarget(){ state.targetModal=null; renderScroll(); }
+function uiReset(){
+  sfxClick();
+  const overlays = document.querySelectorAll('.overlay,.win-overlay');
+  overlays.forEach(o=>o.remove());
+  state.running = false;
+  renderStartScreen();
+}
+function uiStart(){ ensureAudio(); initGame(); }
+
+function renderStartScreen(){
+  document.getElementById('app').innerHTML = `
+    <div class="start-screen">
+      <h1 class="start-title">9999</h1>
+      <div class="start-sub">DICE RACE &amp; SHOP</div>
+      <p class="start-desc">4人でサイコロを振り合い、最初に9999に到達したプレイヤーの勝ち。<br>ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
+      <button class="start-btn" onclick="uiStart()">ゲームスタート</button>
+    </div>
+  `;
+}
+
+// boot
+renderStartScreen();
+</script>
+</body>
+</html>
