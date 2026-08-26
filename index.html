@@ -239,7 +239,11 @@ html,body{
 .result-chip{font-size:8px;padding:2px 5px;border-radius:5px;border:1.5px solid;font-weight:700;white-space:nowrap;}
 
 /* start screen */
-.start-screen{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;gap:10px;}
+.start-screen{height:100%;display:flex;flex-direction:column;align-items:center;text-align:center;padding:0;gap:0;overflow:hidden;}
+.start-logo-wrap{width:100%;flex:0 0 auto;padding:22px 34px 4px;}
+.start-logo{width:100%;height:auto;display:block;}
+.start-logo path{fill:var(--blue);}
+.start-bottom{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:6px 26px 20px;overflow-y:auto;}
 .start-title{font-family:'Share Tech Mono',monospace;font-size:52px;letter-spacing:6px;margin:0;color:var(--blue);font-weight:900;}
 .start-sub{font-size:11px;letter-spacing:4px;color:var(--sub);margin-bottom:10px;}
 .start-desc{font-size:11px;color:var(--ink);line-height:1.6;max-width:280px;margin:0 0 4px;}
@@ -1535,13 +1539,22 @@ function renderStartScreen(){
   const saved = loadSavedGame();
   document.getElementById('app').innerHTML = `
     <div class="start-screen">
-      <h1 class="start-title">9999</h1>
-      <div class="start-sub">DICE RACE &amp; SHOP</div>
-      <p class="start-desc">Roll dice with 3 rivals — first to reach 9999 wins. Buy items in the shop to accelerate or sabotage others.</p>
-      <p class="start-desc ja">4人でサイコロを振り合い、最初に9999に到達したプレイヤーの勝ち。ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
-      <button class="start-btn" onclick="uiStart()">${saved?'NEW GAME ／ 最初から始める':'START ／ ゲームスタート'}</button>
-      ${saved ? `<button class="start-btn" onclick="uiResume()">RESUME ／ 続きから再開</button>` : ''}
-      <div class="start-note">Progress auto-saves every few seconds (this browser only) ／ 進行状況は数秒おきに自動保存されます（このブラウザ内のみ）</div>
+      <div class="start-logo-wrap">
+        <svg class="start-logo" viewBox="0 20 1080 1250" xmlns="http://www.w3.org/2000/svg">
+          <path d="M87.8,273.15h859.87c8.2,0,14.84-6.64,14.84-14.84h0c0-8.2-6.64-14.84-14.84-14.84H148.82c-50.09,0-90.69-40.61-90.69-90.69h0c0-50.09,40.61-90.69,90.69-90.69h782.32c50.11,0,90.74,40.63,90.74,90.74v95.56c0,46.47-37.67,84.14-84.14,84.14H87.8c-16.39,0-29.68-13.29-29.68-29.68h0c0-16.39,13.29-29.68,29.68-29.68ZM962.51,152.78h0c0-17.3-14.03-31.33-31.33-31.33H148.82c-17.3,0-31.33,14.03-31.33,31.33h0c0,17.3,14.03,31.33,31.33,31.33h782.37c17.3,0,31.33-14.03,31.33-31.33Z"/>
+          <path d="M87.8,583.45h859.87c8.2,0,14.84-6.64,14.84-14.84h0c0-8.2-6.64-14.84-14.84-14.84H148.82c-50.09,0-90.69-40.61-90.69-90.69h0c0-50.09,40.61-90.69,90.69-90.69h782.32c50.11,0,90.74,40.63,90.74,90.74v95.56c0,46.47-37.67,84.14-84.14,84.14H87.8c-16.39,0-29.68-13.29-29.68-29.68h0c0-16.39,13.29-29.68,29.68-29.68ZM962.51,463.08h0c0-17.3-14.03-31.33-31.33-31.33H148.82c-17.3,0-31.33,14.03-31.33,31.33h0c0,17.3,14.03,31.33,31.33,31.33h782.37c17.3,0,31.33-14.03,31.33-31.33Z"/>
+          <path d="M87.8,893.75h859.87c8.2,0,14.84-6.64,14.84-14.84h0c0-8.2-6.64-14.84-14.84-14.84H148.82c-50.09,0-90.69-40.61-90.69-90.69h0c0-50.09,40.61-90.69,90.69-90.69h782.32c50.11,0,90.74,40.63,90.74,90.74v95.56c0,46.47-37.67,84.14-84.14,84.14H87.8c-16.39,0-29.68-13.29-29.68-29.68h0c0-16.39,13.29-29.68,29.68-29.68ZM962.51,773.38h0c0-17.3-14.03-31.33-31.33-31.33H148.82c-17.3,0-31.33,14.03-31.33,31.33h0c0,17.3,14.03,31.33,31.33,31.33h782.37c17.3,0,31.33-14.03,31.33-31.33Z"/>
+          <path d="M87.8,1204.05h859.87c8.2,0,14.84-6.64,14.84-14.84h0c0-8.2-6.64-14.84-14.84-14.84H148.82c-50.09,0-90.69-40.61-90.69-90.69h0c0-50.09,40.61-90.69,90.69-90.69h782.32c50.11,0,90.74,40.63,90.74,90.74v95.56c0,46.47-37.67,84.14-84.14,84.14H87.8c-16.39,0-29.68-13.29-29.68-29.68h0c0-16.39,13.29-29.68,29.68-29.68ZM962.51,1083.67h0c0-17.3-14.03-31.33-31.33-31.33H148.82c-17.3,0-31.33,14.03-31.33,31.33h0c0,17.3,14.03,31.33,31.33,31.33h782.37c17.3,0,31.33-14.03,31.33-31.33Z"/>
+        </svg>
+      </div>
+      <div class="start-bottom">
+        <div class="start-sub">DICE RACE &amp; SHOP</div>
+        <p class="start-desc">Roll dice with 3 rivals — first to reach 9999 wins. Buy items in the shop to accelerate or sabotage others.</p>
+        <p class="start-desc ja">4人でサイコロを振り合い、最初に9999に到達したプレイヤーの勝ち。ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
+        <button class="start-btn" onclick="uiStart()">${saved?'NEW GAME ／ 最初から始める':'START ／ ゲームスタート'}</button>
+        ${saved ? `<button class="start-btn" onclick="uiResume()">RESUME ／ 続きから再開</button>` : ''}
+        <div class="start-note">Progress auto-saves every few seconds (this browser only) ／ 進行状況は数秒おきに自動保存されます（このブラウザ内のみ）</div>
+      </div>
     </div>
   `;
 }
