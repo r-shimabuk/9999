@@ -638,13 +638,13 @@ function finalizeRoll(p){
   const prevMilestone = Math.floor(p.progress/1000);
   p.progress = Math.min(GOAL, p.progress + total);
   p.coins += total + (p.coinBonusPerRoll||0);
-  if(Math.floor(p.progress/1000) > prevMilestone){ sfxMilestone(); addLog(`${p.name} が ${Math.floor(p.progress/1000)*1000} を突破！`); }
+  if(Math.floor(p.progress/1000) > prevMilestone){ if(p.isHuman) sfxMilestone(); addLog(`${p.name} が ${Math.floor(p.progress/1000)*1000} を突破！`); }
   if(total > state.lastGlobalMaxRoll){
     state.lastGlobalMaxRoll = total;
     triggerChain('luck', p);
     p.comboCount = (p.comboCount||0) + 1;
     if(p.comboCount>=2){
-      sfxCombo(p.comboCount);
+      if(p.isHuman) sfxCombo(p.comboCount);
       addLog(`${p.name} が COMBO x${p.comboCount}！（出目×${comboMult.toFixed(2)}）`, 'win');
       if(p.comboCount % 3 === 0){
         const bonus = p.comboCount * 5;
@@ -657,15 +657,15 @@ function finalizeRoll(p){
   }
   const bonusTxt = ((p.multiplierFactor||1)>1||comboMult>1) ? `（${rawTotal}→×${((p.multiplierFactor||1)*comboMult).toFixed(2)}）` : '';
   addLog(`${p.name} が [${rolls.join(',')}] で合計+${total}${bonusTxt}（進捗${p.progress}）`);
-  sfxRollResult(total);
+  if(p.isHuman) sfxRollResult(total);
   if(p.isHuman) popRoll(total, p.comboCount);
   triggerAuras(p);
   const newLeader = getLeader();
-  if(newLeader.id !== lastLeaderId){ if(lastLeaderId!==null) sfxLeaderChange(); lastLeaderId = newLeader.id; }
+  if(newLeader.id !== lastLeaderId){ if(lastLeaderId!==null && p.isHuman) sfxLeaderChange(); lastLeaderId = newLeader.id; }
   if(p.progress >= GOAL){
     state.winner = p;
     addLog(`${p.name} が 9999 に到達！勝利！`, 'win');
-    sfxWin();
+    if(p.isHuman) sfxWin();
     renderWin();
   }
 }
@@ -716,7 +716,7 @@ function triggerAuras(p){
   }
   if(p.auraProc.coinSteal && Math.random()<p.auraProc.coinSteal){
     const t = pick();
-    if(t.effects.immuneStealPermanent){ if(t.isHuman) sfxImmuneBlock(); }
+    if(t.effects.immuneStealPermanent){ /* 被弾側の防御は自分のアクションではないため無音 */ }
     else {
       const amount = Math.max(1, Math.round(t.coins * 0.15 * (1-(t.debuffResist||0))));
       t.coins = Math.max(0, t.coins - amount);
@@ -727,12 +727,12 @@ function triggerAuras(p){
   }
   if(p.auraProc.fakeBubble && Math.random()<p.auraProc.fakeBubble){
     const t = pick();
-    if(t.effects.immuneFakePermanent){ if(t.isHuman) sfxImmuneBlock(); }
+    if(t.effects.immuneFakePermanent){ /* 被弾側の防御は自分のアクションではないため無音 */ }
     else {
       t.bubble = '？？？'; t.bubbleUntil = now+4000; t.lastAttackerBy = p.name; compensate(t); fired = true;
     }
   }
-  if(fired) sfxAura();
+  if(fired && p.isHuman) sfxAura();
 }
 
 // fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
@@ -802,8 +802,8 @@ function restockBatch(onlyEmpty){
   }
   if(!onlyEmpty){ state.shop.preview = rollPreviewBatch(); }
   if(count>0){
-    if(jackpot){ addLog(`棚に高額アイテムが混ざって入荷した！`, 'win'); sfxJackpot(); }
-    else { addLog(onlyEmpty ? `棚に${count}個、追加で入荷しました。` : `棚が一斉に補充されました（${count}個）。`); sfxRestock(); }
+    if(jackpot){ addLog(`棚に高額アイテムが混ざって入荷した！`, 'win'); }
+    else { addLog(onlyEmpty ? `棚に${count}個、追加で入荷しました。` : `棚が一斉に補充されました（${count}個）。`); }
   }
 }
 
@@ -841,10 +841,10 @@ function startAuction(p, slotIdx){
   if(!item || state.shop.lockedUntil[slotIdx] > Date.now() || state.shop.auctions[slotIdx]) return;
   const basePrice = priceFor(p, item);
   const price = Math.round(basePrice * MULT_SEQ[0]);
-  if(p.coins < price) { addLog(`${p.name} はコインが足りず入札できなかった。`); sfxFail(); return; }
+  if(p.coins < price) { addLog(`${p.name} はコインが足りず入札できなかった。`); if(p.isHuman) sfxFail(); return; }
   state.shop.auctions[slotIdx] = { bidder: p.id, tier: 0, basePrice, deadline: Date.now()+AUCTION_MS };
   addLog(`${p.name} が「${item.name}」に${price}コインで入札！誰か競る？（5秒）`);
-  sfxBidStart();
+  if(p.isHuman) sfxBidStart();
   renderScroll();
 }
 
@@ -861,7 +861,7 @@ function raiseAuction(p, slotIdx, targetTier){
   auc.tier = tier;
   auc.deadline = Date.now()+AUCTION_MS;
   addLog(`${p.name} が${MULT_SEQ[tier]}倍（${price}コイン）で競り上げた！`);
-  sfxBidRaise(tier);
+  if(p.isHuman) sfxBidRaise(tier);
   renderScroll();
 }
 
@@ -877,7 +877,7 @@ function resolveAuctionSlot(slotIdx){
   if(bidder.coins < price){
     addLog(`${bidder.name} は支払えず「${item.name}」の落札が流れた…`, 'atk');
     state.shop.slots[slotIdx] = null;
-    sfxFail();
+    if(bidder.isHuman) sfxFail();
     renderScroll();
     return;
   }
@@ -889,11 +889,11 @@ function resolveAuctionSlot(slotIdx){
   if(bidder.inventory.length>50) bidder.inventory.shift();
   if(item.type==='junk'){
     addLog(`${bidder.name} が「${item.name}」を${price}コインで落札…完全な無駄だった`, 'atk');
-    sfxFail();
+    if(bidder.isHuman) sfxFail();
   } else {
     applyEffect(bidder, item);
     addLog(`${bidder.name} が「${item.name}」を${price}コインで落札！`, 'win');
-    sfxAuctionWin();
+    if(bidder.isHuman) sfxAuctionWin();
   }
   triggerChain('discount', bidder);
   renderScroll();
@@ -904,7 +904,7 @@ function checkComboSetA(p){
     p.effects.comboSetAComplete = true;
     p.multiplierFactor = (p.multiplierFactor||1) * 10; // 実質10倍
     addLog(`${p.name} が三色の欠片を揃えた！合計出目が実質10倍に！`, 'win');
-    sfxJackpot();
+    if(p.isHuman) sfxJackpot();
   }
 }
 
@@ -962,7 +962,6 @@ setInterval(()=>{
   const now = Date.now();
   if(!state.shop.warned && state.shop.nextRestock - now <= 5000 && state.shop.nextRestock - now > 4700){
     addLog('まもなく棚が一斉に補充されるぞ！');
-    sfxRestockWarn();
     state.shop.warned = true;
   }
   if(now >= state.shop.nextRestock){
