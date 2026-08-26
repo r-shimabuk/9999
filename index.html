@@ -127,7 +127,9 @@ html,body{
 .slot .rarity-tag{font-size:7px;letter-spacing:1px;padding:2px 5px;border-radius:3px;display:inline-block;margin-bottom:3px;font-weight:700;border:1.5px solid;background:transparent;}
 .slot .iname{font-size:10px;font-weight:700;line-height:1.25;margin-bottom:2px;color:var(--ink);}
 .slot .idesc{font-size:8px;color:var(--sub);line-height:1.25;margin-bottom:5px;}
+.slot .price-label{font-size:6.5px;color:var(--sub);letter-spacing:0.5px;margin-bottom:1px;}
 .slot .price-big{font-size:15px;font-family:'Share Tech Mono',monospace;font-weight:900;line-height:1;}
+.slot .price-big.raise{font-size:19px;}
 .slot button{width:100%;margin-top:4px;padding:8px 3px;border-radius:8px;font-weight:900;font-size:10.5px;line-height:1.25;cursor:pointer;background:transparent;border:2px solid var(--purple);color:var(--purple);min-height:38px;}
 .slot button:disabled{border-color:var(--sub)!important;color:var(--sub)!important;cursor:not-allowed;}
 .slot .empty{color:var(--sub);font-size:9px;text-align:center;margin:auto;}
@@ -1204,22 +1206,25 @@ function renderScroll(){
         const remain = Math.max(0, Math.ceil((auc.deadline-now)/1000));
         const isMe = bidder && bidder.id===human.id;
         const nextTier = auc.tier + 1;
-        let btnHtml;
+        let priceBlockHtml, btnHtml;
         if(isMe){
-          btnHtml = `<button disabled>YOU LEAD ／ 自分が最高額</button>`;
+          priceBlockHtml = `<div class="price-label">CURRENT ／ 現在</div><div class="price-big mono" style="color:var(--blue)">${curPrice}C</div>`;
+          btnHtml = `<button disabled>YOU LEAD</button>`;
         } else if(nextTier < MULT_SEQ.length){
           const tp = Math.round(auc.basePrice * MULT_SEQ[nextTier]);
           const can = human.coins >= tp;
-          btnHtml = `<button ${can?'':'disabled'} data-action="raise" data-slot="${i}" data-tier="${nextTier}">x${MULT_SEQ[nextTier]} BID ／ ${MULT_SEQ[nextTier]}倍で競る（${tp}C）</button>`;
+          priceBlockHtml = `<div class="price-label">現在${curPrice}C ／ 競るには</div><div class="price-big raise mono" style="color:${can?'var(--purple)':'var(--sub)'}">${tp}C</div>`;
+          btnHtml = `<button ${can?'':'disabled'} data-action="raise" data-slot="${i}" data-tier="${nextTier}">x${MULT_SEQ[nextTier]} BID</button>`;
         } else {
-          btnHtml = `<button disabled>MAX ／ 上限到達</button>`;
+          priceBlockHtml = `<div class="price-label">CURRENT ／ 現在</div><div class="price-big mono" style="color:${rar.color}">${curPrice}C</div>`;
+          btnHtml = `<button disabled>MAX</button>`;
         }
         html += `<div class="slot auction ${isMe?'mine':''}" style="border-color:${isMe?'var(--blue)':rar.color}">
           <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
           <div class="iname">${item.name}</div>
           <div class="idesc">${item.desc}</div>
           <div class="idesc" style="color:${isMe?'var(--blue)':rar.color};font-weight:700;">${isMe?'あなたが入札中！':'BIDDING ／ '+(bidder?bidder.name:'?')+'が入札中'}・残り${remain}秒</div></div>
-          <div><div class="price-big mono" style="color:${isMe?'var(--blue)':rar.color}">${curPrice}C</div>
+          <div>${priceBlockHtml}
           ${btnHtml}</div>
         </div>`;
       } else {
@@ -1229,8 +1234,8 @@ function renderScroll(){
           <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
           <div class="iname">${item.name}</div>
           <div class="idesc">${item.desc}</div></div>
-          <div><div class="price-big mono" style="color:${rar.color}">${price}C</div>
-          <button ${canBuy?'':'disabled'} data-action="buy" data-slot="${i}">BID ／ 入札する</button></div>
+          <div><div class="price-label">START ／ 開始価格</div><div class="price-big mono" style="color:${rar.color}">${price}C</div>
+          <button ${canBuy?'':'disabled'} data-action="buy" data-slot="${i}">BID</button></div>
         </div>`;
       }
     }
