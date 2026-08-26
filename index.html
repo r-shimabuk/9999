@@ -479,7 +479,8 @@ const GOAL = 9999;
 const SHOP_RESTOCK_MS = 18000;
 const MULT_SEQ = [1, 1.5, 2, 3, 4, 5, 6, 8, 10]; // オークションの倍率ステップ（上限10倍）
 const AUCTION_MS = 3000;
-const CHAIN_MS_DEFAULT = 5000;
+const CHAIN_MS_DEFAULT = 5000; // 値引きチェイン（購入時）はこれまで通り
+const CHAIN_LUCK_MS = 30000; // 幸運チェインは長めに
 const ROLL_ANIM_MS = 1100; // この回転時間そのものがクールタイムになる（初期は長め）
 
 function diceUpgradeCost(currentCount){
@@ -820,7 +821,8 @@ setInterval(()=>{
 
 function triggerChain(type, player){
   const bonusSec = player ? (player.chainBonusSec||0) : 0;
-  const dur = CHAIN_MS_DEFAULT + bonusSec*1000;
+  const base = type==='luck' ? CHAIN_LUCK_MS : CHAIN_MS_DEFAULT;
+  const dur = base + bonusSec*1000;
   state.chain = {type, expiresAt: Date.now()+dur, excludeLeader:true};
   renderScroll();
 }
