@@ -71,8 +71,8 @@ html,body{
 #middleWrap{min-height:0;display:flex;flex-direction:column;gap:2px;overflow:hidden;}
 
 /* scroll area: 相手/チェイン/ショップ。中身が多いときはここだけ内側スクロール */
-#scrollArea{flex:5 1 0;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
-#invPanel{flex:1 1 0;min-height:46px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
+#scrollArea{flex:0 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
+#invPanel{flex:1 1 auto;min-height:40px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
 #invPanel h2{color:var(--role-self);}
 #scrollArea::-webkit-scrollbar{width:4px;}
 #scrollArea::-webkit-scrollbar-thumb{background:var(--sub);border-radius:2px;}
@@ -118,19 +118,21 @@ html,body{
 
 /* shop */
 .shop-slots{display:flex;align-items:stretch;gap:6px;margin-bottom:6px;}
-.slot{flex:1;background:transparent;border:1.5px solid var(--sub);border-radius:8px;padding:4px;min-height:88px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;}
+.slot{flex:1;background:transparent;border:1.5px solid var(--sub);border-radius:8px;padding:4px;height:188px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;overflow:hidden;}
 .slot.locked{opacity:0.4;}
 .slot.auction{animation:auctionPulse 1s ease-in-out infinite;}
 .slot.auction.mine{animation:auctionPulseMine 0.7s ease-in-out infinite;border-width:3px!important;background:rgba(30,111,255,0.08);}
 @keyframes auctionPulseMine{0%{box-shadow:0 0 4px var(--blue);}50%{box-shadow:0 0 16px var(--blue);}100%{box-shadow:0 0 4px var(--blue);}}
 @keyframes auctionPulse{0%{box-shadow:0 0 0 rgba(0,0,0,0);}50%{box-shadow:0 0 8px currentColor;}100%{box-shadow:0 0 0 rgba(0,0,0,0);}}
 .slot .rarity-tag{font-size:7px;letter-spacing:1px;padding:2px 5px;border-radius:3px;display:inline-block;margin-bottom:3px;font-weight:700;border:1.5px solid;background:transparent;}
-.slot .iname{font-size:10px;font-weight:700;line-height:1.25;margin-bottom:2px;color:var(--ink);}
-.slot .idesc{font-size:8px;color:var(--sub);line-height:1.25;margin-bottom:5px;}
+.slot .iname{font-size:9.5px;font-weight:700;line-height:1.2;margin-bottom:1px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slot .idesc{font-size:7.5px;color:var(--sub);line-height:1.2;margin-bottom:0;}
+.slot .idesc.clamp2{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:27px;}
+.slot .status-line{min-height:9.5px;margin-top:2px;font-size:7.5px;line-height:1.2;}
 .slot .price-label{font-size:6.5px;color:var(--sub);letter-spacing:0.5px;margin-bottom:1px;}
 .slot .price-big{font-size:15px;font-family:'Share Tech Mono',monospace;font-weight:900;line-height:1;}
 .slot .price-big.raise{font-size:19px;}
-.slot button{width:100%;margin-top:4px;padding:8px 3px;border-radius:8px;font-weight:900;font-size:10.5px;line-height:1.25;cursor:pointer;background:transparent;border:2px solid var(--purple);color:var(--purple);min-height:38px;}
+.slot button{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:10px;line-height:1.2;cursor:pointer;background:transparent;border:2px solid var(--purple);color:var(--purple);min-height:32px;}
 .slot button:disabled{border-color:var(--sub)!important;color:var(--sub)!important;cursor:not-allowed;}
 .slot .empty{color:var(--sub);font-size:9px;text-align:center;margin:auto;}
 
@@ -400,7 +402,7 @@ const ITEMS = [
   {id:34, name:'ダブルダイスパック', desc:'サイコロ+2個（永続・まとめ買い割増あり）', price:0, rarity:'epic', type:'addDice2'},
   {id:35, name:'トリプルダイスパック', desc:'サイコロ+3個（永続・まとめ買い割増大）', price:0, rarity:'legend', type:'addDice3'},
   {id:50, name:'クインタプルダイスパック', desc:'サイコロ+5個（永続・まとめ買い割増特大）', price:0, rarity:'legend', type:'addDice5'},
-  {id:27, name:'倍化の指輪', desc:'合計出目×1.1（複利で重なる・永続、上限なし）', price:70, rarity:'epic', type:'multiplier', amount:0.1},
+  {id:27, name:'倍化の指輪', desc:'合計出目×1.1（複利で重なる・永続、上限なし）', price:220, rarity:'epic', type:'multiplier', amount:0.1},
   {id:36, name:'強化の指輪', desc:'合計出目×1.2（複利で重なる・永続、上限なし）', price:150, rarity:'epic', type:'multiplier', amount:0.2},
   {id:37, name:'神域の指輪', desc:'合計出目×1.4（複利で重なる・永続、上限なし）', price:400, rarity:'legend', type:'multiplier', amount:0.4},
   {id:39, name:'加速の指輪', desc:'合計出目×1.15（複利で重なる・永続、上限なし）', price:100, rarity:'rare', type:'multiplier', amount:0.15},
@@ -1225,8 +1227,8 @@ function renderScroll(){
         html += `<div class="slot auction ${isMe?'mine':''}" style="border-color:${isMe?'var(--blue)':rar.color}">
           <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
           <div class="iname">${item.name}</div>
-          <div class="idesc">${item.desc}</div>
-          <div class="idesc" style="color:${isMe?'var(--blue)':rar.color};font-weight:700;">${isMe?'あなたが入札中！':'BIDDING ／ '+(bidder?bidder.name:'?')+'が入札中'}・残り${remain}秒</div></div>
+          <div class="idesc clamp2">${item.desc}</div>
+          <div class="status-line" style="color:${isMe?'var(--blue)':rar.color};font-weight:700;">${isMe?'あなたが入札中！':'BIDDING・残り'+remain+'秒'}</div></div>
           <div>${priceBlockHtml}
           ${btnHtml}</div>
         </div>`;
@@ -1236,7 +1238,8 @@ function renderScroll(){
         html += `<div class="slot" style="border-color:${rar.color}">
           <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
           <div class="iname">${item.name}</div>
-          <div class="idesc">${item.desc}</div></div>
+          <div class="idesc clamp2">${item.desc}</div>
+          <div class="status-line"></div></div>
           <div><div class="price-label">START ／ 開始価格</div><div class="price-big mono" style="color:${rar.color}">${price}C</div>
           <button ${canBuy?'':'disabled'} data-action="buy" data-slot="${i}">BID</button></div>
         </div>`;
