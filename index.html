@@ -279,18 +279,22 @@ document.addEventListener('touchmove', function(e){
 }, {passive:false});
 
 // 万が一拡大されてしまった場合の保険：viewportを再適用して強制的に元の倍率に戻す
-const viewportMeta = document.querySelector('meta[name="viewport"]');
+// ※ 属性の書き換えだけでは最近のiOS Safariで効かないことがあるため、
+//   タグ自体を一度削除して作り直す、より強い方式も併用する
 const VIEWPORT_CONTENT = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no';
 function forceResetZoom(){
-  if(!viewportMeta) return;
-  viewportMeta.setAttribute('content', VIEWPORT_CONTENT + ', shrink-to-fit=no');
-  requestAnimationFrame(()=>{ viewportMeta.setAttribute('content', VIEWPORT_CONTENT); });
+  const old = document.querySelector('meta[name="viewport"]');
+  if(old) old.remove();
+  const fresh = document.createElement('meta');
+  fresh.setAttribute('name', 'viewport');
+  fresh.setAttribute('content', VIEWPORT_CONTENT);
+  document.head.appendChild(fresh);
 }
 document.addEventListener('touchend', forceResetZoom, {passive:true});
 document.addEventListener('gestureend', forceResetZoom, {passive:true});
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') forceResetZoom(); });
 window.addEventListener('orientationchange', forceResetZoom);
-setInterval(forceResetZoom, 2000); // 定期的にも強制リセット
+setInterval(forceResetZoom, 1500); // 定期的にも強制リセット
 
 // ショップの購入/競り上げボタンは頻繁に再描画される領域にあるため、
 // clickではなくpointerdownで即座に処理し、再描画によるタップ消失を防ぐ
