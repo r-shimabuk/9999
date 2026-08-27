@@ -36,6 +36,7 @@
   --role-self:#1E6FFF;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation;}
+button{touch-action:manipulation; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
 html,body{
   margin:0;padding:0;background:var(--bg);color:var(--ink);
   font-family:'Zen Kaku Gothic New',sans-serif;
@@ -260,6 +261,7 @@ html,body{
 <script>
 // ---------- sound engine (Web Audio, no external files) ----------
 // ダブルタップでの拡大を防止（iOS Safariのフォールバック）
+// ※ touchendでの判定のみに絞る（touchstartで止めると連打プレイ自体を壊してしまうため）
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function(e){
   const now = Date.now();
@@ -275,6 +277,20 @@ document.addEventListener('gestureend', function(e){ e.preventDefault(); }, {pas
 document.addEventListener('touchmove', function(e){
   if(e.touches && e.touches.length > 1){ e.preventDefault(); }
 }, {passive:false});
+
+// 万が一拡大されてしまった場合の保険：viewportを再適用して強制的に元の倍率に戻す
+const viewportMeta = document.querySelector('meta[name="viewport"]');
+const VIEWPORT_CONTENT = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no';
+function forceResetZoom(){
+  if(!viewportMeta) return;
+  viewportMeta.setAttribute('content', VIEWPORT_CONTENT + ', shrink-to-fit=no');
+  requestAnimationFrame(()=>{ viewportMeta.setAttribute('content', VIEWPORT_CONTENT); });
+}
+document.addEventListener('touchend', forceResetZoom, {passive:true});
+document.addEventListener('gestureend', forceResetZoom, {passive:true});
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') forceResetZoom(); });
+window.addEventListener('orientationchange', forceResetZoom);
+setInterval(forceResetZoom, 2000); // 定期的にも強制リセット
 
 // ショップの購入/競り上げボタンは頻繁に再描画される領域にあるため、
 // clickではなくpointerdownで即座に処理し、再描画によるタップ消失を防ぐ
@@ -387,6 +403,7 @@ function sfxRestockWarn(){ playClickSound(); }
 function sfxWin(){ for(let i=0;i<4;i++) setTimeout(()=>playClickSound(), i*90); }
 function sfxClick(){ playClickSound(); }
 function sfxMilestone(){ playClickSound(); }
+function sfxCheckpoint(){ beep(1200,0.09,'sine',0.16); beep(1600,0.13,'sine',0.18,0.09); }
 function sfxLeaderChange(){ playClickSound(); }
 function sfxJackpot(){ for(let i=0;i<4;i++) setTimeout(()=>playClickSound(), i*80); }
 function sfxQueueJoin(){ playClickSound(); }
@@ -546,6 +563,7 @@ function newPlayer(id, name, isHuman, personality){
     flatRollBonus: 0,
     comboPieces: {},
     customDice: [],
+    flags: 0,
   };
 }
 
@@ -559,6 +577,8 @@ let state = {
   targetModal:null,
   pendingSlot:null,
   lastGlobalMaxRoll:0,
+  checkpointsClaimed:{},
+  checkpointBuff:null,
 };
 
 function addLog(text, cls){
@@ -604,6 +624,8 @@ function initGame(){
   state.shop = {slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+SHOP_RESTOCK_MS, nextQuickRestock:Date.now()+QUICK_RESTOCK_MS, warned:false};
   state.chain = {type:null, expiresAt:0, excludeLeader:true};
   state.nextInterestAt = Date.now()+10000;
+  state.checkpointsClaimed = {};
+  state.checkpointBuff = null;
   lastLeaderId = null;
   lastSelfRank = null;
   state.log = [];
@@ -629,6 +651,13 @@ function diceRange(p){
   let max = 6 + p.maxBonus;
   if(p.effects.maxDownUntil && p.effects.maxDownUntil > Date.now()) max = Math.max(min, max - (p.effects.maxDownAmount||2));
   return {min, max};
+}
+
+function checkpointBuffActive(p){
+  if(!state.checkpointBuff) return false;
+  if(state.checkpointBuff.expiresAt <= Date.now()) return false;
+  if(state.checkpointBuff.ownerId === p.id) return false; // 旗を取った本人には効果なし
+  return true;
 }
 
 function chainLuckActive(p){
@@ -707,13 +736,24 @@ function finalizeRoll(p){
   rawTotal += collectorBonus;
   rawTotal += (p.flatRollBonus||0);
   const comboMult = 1 + Math.min(p.comboCount||0, 60) * 0.03; // 振り続けるほど一時的に伸びる（最大+1.8倍＝合計2.8倍）。オークション参加でリセット
-  const total = Math.round(rawTotal * (p.multiplierFactor||1) * comboMult);
+  const checkpointMult = checkpointBuffActive(p) ? 1.2 : 1; // 誰かが旗を取ると、その人以外に10秒間+20%
+  const total = Math.round(rawTotal * (p.multiplierFactor||1) * comboMult * checkpointMult);
   p.lastRollTotal = total;
 
   const prevMilestone = Math.floor(p.progress/1000);
   p.progress = Math.min(GOAL, p.progress + total);
   p.coins += total + (p.coinBonusPerRoll||0);
   if(Math.floor(p.progress/1000) > prevMilestone){ if(p.isHuman) sfxMilestone(); addLog(`${p.name} が ${Math.floor(p.progress/1000)*1000} を突破！`); }
+  // チェックポイント（1000刻み）に最初に到達した人だけ旗を獲得し、他の全員に10秒間+20%バフ
+  for(let cp=1000; cp<GOAL; cp+=1000){
+    if(p.progress >= cp && !state.checkpointsClaimed[cp]){
+      state.checkpointsClaimed[cp] = p.id;
+      p.flags = (p.flags||0) + 1;
+      state.checkpointBuff = { expiresAt: Date.now()+10000, ownerId: p.id };
+      addLog(`${p.name} が ${cp} チェックポイントに最初に到達！旗を獲得！（他の全員に10秒間×1.2バフ）`, 'win');
+      if(p.isHuman) sfxCheckpoint();
+    }
+  }
   if(total > state.lastGlobalMaxRoll){
     state.lastGlobalMaxRoll = total;
     triggerChain('luck', p);
@@ -1429,6 +1469,8 @@ function renderBadges(p, now){
     b+=`<span class="badge">欠片${got}/3</span>`;
   }
   if(p.effects.comboSetAComplete) b+=`<span class="badge combo-badge active">欠片コンプ！×10</span>`;
+  if(p.flags>0) b+=`<span class="badge">旗×${p.flags}</span>`;
+  if(checkpointBuffActive(p)) b+=`<span class="badge buff">旗バフ×1.2（残り${Math.ceil((state.checkpointBuff.expiresAt-now)/1000)}秒）</span>`;
   if(p.collectorLevel>0) b+=`<span class="badge">収集の力+${(p.collectorLevel||0)*Math.floor((p.totalItemsOwned||0)/3)}（所持${p.totalItemsOwned||0}）</span>`;
   if(p.comboCount>=2){
     b+=`<span class="badge combo-badge active">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,60)*0.03).toFixed(2)}）</span>`;
@@ -1472,7 +1514,7 @@ function renderWin(){
         <b style="color:${color}">${p.name}</b>
         <span class="mono" style="margin-left:auto;color:${color}">${fmt(p.progress)}</span>
       </div>
-      <div class="result-stats mono">ダイス×${p.diceCount} ／ 出目×${(p.multiplierFactor||1).toFixed(2)} ／ ボーナス+${p.flatRollBonus||0} ／ コイン${p.coins}</div>
+      <div class="result-stats mono">ダイス×${p.diceCount} ／ 出目×${(p.multiplierFactor||1).toFixed(2)} ／ ボーナス+${p.flatRollBonus||0} ／ コイン${p.coins} ／ 旗×${p.flags||0}</div>
       <div class="result-items">${items}</div>
     </div>`;
   });
