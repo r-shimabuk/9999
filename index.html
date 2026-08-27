@@ -630,10 +630,10 @@ const ITEMS = [
   {id:34, name:'ダブルダイスパック', desc:'サイコロ+2個（永続・まとめ買い割引あり）', price:0, rarity:'epic', type:'addDice2'},
   {id:35, name:'トリプルダイスパック', desc:'サイコロ+3個（永続・まとめ買い割引大）', price:0, rarity:'legend', type:'addDice3'},
   {id:50, name:'クインタプルダイスパック', desc:'サイコロ+5個（永続・まとめ買い割引特大）', price:0, rarity:'legend', type:'addDice5'},
-  {id:27, name:'倍化の指輪', desc:'合計出目×1.1（複利で重なる・永続、上限なし）', price:220, rarity:'epic', type:'multiplier', amount:0.1},
-  {id:36, name:'強化の指輪', desc:'合計出目×1.2（複利で重なる・永続、上限なし）', price:150, rarity:'epic', type:'multiplier', amount:0.2},
-  {id:37, name:'神域の指輪', desc:'合計出目×1.4（複利で重なる・永続、上限なし）', price:400, rarity:'legend', type:'multiplier', amount:0.4},
-  {id:39, name:'加速の指輪', desc:'合計出目×1.15（複利で重なる・永続、上限なし）', price:100, rarity:'rare', type:'multiplier', amount:0.15},
+  {id:27, name:'倍化の指輪', desc:'合計出目×1.15（複利で重なる・永続、上限なし）', price:220, rarity:'epic', type:'multiplier', amount:0.15},
+  {id:36, name:'強化の指輪', desc:'合計出目×1.3（複利で重なる・永続、上限なし）', price:150, rarity:'epic', type:'multiplier', amount:0.3},
+  {id:37, name:'神域の指輪', desc:'合計出目×1.6（複利で重なる・永続、上限なし）', price:400, rarity:'legend', type:'multiplier', amount:0.6},
+  {id:39, name:'加速の指輪', desc:'合計出目×1.22（複利で重なる・永続、上限なし）', price:100, rarity:'rare', type:'multiplier', amount:0.22},
   {id:40, name:'覚醒の秘宝', desc:'合計出目が一撃で×10（他の倍率と複利で重なる）。超高額', price:2000, rarity:'legend', type:'multiplierBig'},
   // 出目に直接加算するアイテム群（永続・重ね掛け可）
   {id:48, name:'出目+10', desc:'ロールごとに合計出目+10（永続）', price:9, rarity:'common', type:'flatBonus', amount:10},
@@ -644,8 +644,8 @@ const ITEMS = [
   {id:44, name:'固定ダイス100', desc:'出目100の特別なダイスが1個増える感覚（永続、+100）', price:350, rarity:'legend', type:'flatBonus', amount:100},
   {id:45, name:'固定ダイス500', desc:'出目500の特別なダイスが1個増える感覚（永続、+500）', price:1200, rarity:'legend', type:'flatBonus', amount:500},
   // 出目を一撃で○倍にする秘薬（永続・重ね掛け可）
-  {id:46, name:'倍化の秘薬', desc:'合計出目が一撃で×2（他の倍率と複利で重なる）', price:500, rarity:'legend', type:'multiplierJump', amount:1.0},
-  {id:47, name:'3倍の秘薬', desc:'合計出目が一撃で×3（他の倍率と複利で重なる）', price:1000, rarity:'legend', type:'multiplierJump', amount:2.0},
+  {id:46, name:'倍化の秘薬', desc:'合計出目が一撃で×2.5（他の倍率と複利で重なる）', price:500, rarity:'legend', type:'multiplierJump', amount:1.5},
+  {id:47, name:'3倍の秘薬', desc:'合計出目が一撃で×4（他の倍率と複利で重なる）', price:1000, rarity:'legend', type:'multiplierJump', amount:3.0},
   // コンボ専用アイテム（3つ揃うと大きな力・単体では無力。妨害目的で買われることも）
   {id:54, name:'紅の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA1'},
   {id:55, name:'蒼の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA2'},
@@ -670,7 +670,7 @@ const ITEMS = [
   {id:12, name:'盗難耐性', desc:'コイン強奪トラップを完全無効化', price:28, rarity:'rare', type:'immuneStealPerm'},
   {id:13, name:'目視回避', desc:'フェイクトラップを完全無効化', price:6, rarity:'common', type:'immuneFakePerm'},
   // 情報系（永続）
-  {id:14, name:'望遠鏡', desc:'常に相手の所持コインが見える', price:5, rarity:'common', type:'seeCoinsPerm'},
+  {id:14, name:'望遠鏡', desc:'常に相手の出目倍率が見える', price:5, rarity:'common', type:'seeCoinsPerm'},
   {id:15, name:'予兆センサー', desc:'常に次回入荷までの秒数が見える', price:5, rarity:'common', type:'seeRestockPerm'},
   {id:16, name:'監視カメラ', desc:'自分を最後に攻撃した相手が常に見える', price:20, rarity:'rare', type:'revealAttackerPerm'},
   {id:17, name:'先行入荷通知', desc:'次回入荷するアイテムを事前に確認できる', price:6, rarity:'common', type:'previewPerm'},
@@ -731,7 +731,7 @@ function weightedItemPick(progress){
 function newPlayer(id, name, isHuman, personality){
   return {
     id, name, isHuman, personality: personality||null,
-    progress:0, coins:0,
+    progress:0,
     diceCount:1, maxBonus:0, minBonus:0,
     effects:{},
     bubble:null, bubbleUntil:0,
@@ -928,7 +928,7 @@ function requestRoll(p){
 }
 
 function compensate(t){
-  if(t.insuranceBonus){ t.coins += t.insuranceBonus; }
+  if(t.insuranceBonus){ t.progress = Math.min(GOAL, t.progress + t.insuranceBonus); }
 }
 
 function finalizeRoll(p){
@@ -948,14 +948,13 @@ function finalizeRoll(p){
   const collectorBonus = (p.collectorLevel||0) * Math.floor((p.totalItemsOwned||0)/2);
   rawTotal += collectorBonus;
   rawTotal += (p.flatRollBonus||0);
-  const comboMult = 1 + Math.min(p.comboCount||0, 60) * 0.03; // 振り続けるほど一時的に伸びる（最大+1.8倍＝合計2.8倍）。オークション参加でリセット
-  const checkpointMult = checkpointBuffActive(p) ? 1.2 : 1; // 誰かが旗を取ると、その人以外に10秒間+20%
+  const comboMult = 1 + Math.min(p.comboCount||0, 80) * 0.05; // 振り続けるほど一時的に伸びる（最大+4.0倍＝合計5.0倍）。オークション参加でリセット
+  const checkpointMult = checkpointBuffActive(p) ? 1.35 : 1; // 誰かが旗を取ると、その人以外に10秒間+35%
   const total = Math.round(rawTotal * (p.multiplierFactor||1) * comboMult * checkpointMult);
   p.lastRollTotal = total;
 
   const prevMilestone = Math.floor(p.progress/1000);
-  p.progress = Math.min(GOAL, p.progress + total);
-  p.coins += total + (p.coinBonusPerRoll||0);
+  p.progress = Math.min(GOAL, p.progress + total + (p.coinBonusPerRoll||0));
   if(Math.floor(p.progress/1000) > prevMilestone){ if(p.isHuman) sfxMilestone(); addLog(`${p.name} が ${Math.floor(p.progress/1000)*1000} を突破！`); }
   // チェックポイント（1000刻み）に最初に到達した人だけ旗を獲得し、他の全員に10秒間+20%バフ
   for(let cp=1000; cp<GOAL; cp+=1000){
@@ -963,7 +962,7 @@ function finalizeRoll(p){
       state.checkpointsClaimed[cp] = p.id;
       p.flags = (p.flags||0) + 1;
       state.checkpointBuff = { expiresAt: Date.now()+10000, ownerId: p.id };
-      addLog(`${p.name} が ${cp} チェックポイントに最初に到達！旗を獲得！（他の全員に10秒間×1.2バフ）`, 'win');
+      addLog(`${p.name} が ${cp} チェックポイントに最初に到達！旗を獲得！（他の全員に10秒間×1.35バフ）`, 'win');
       if(p.isHuman) sfxCheckpoint();
     }
   }
@@ -977,8 +976,8 @@ function finalizeRoll(p){
     addLog(`${p.name} が COMBO x${p.comboCount}！（出目×${comboMult.toFixed(2)}）`, 'win');
     if(p.comboCount % 10 === 0){
       const bonus = p.comboCount * 3;
-      p.coins += bonus;
-      addLog(`COMBO x${p.comboCount} ボーナス！${p.name}に+${bonus}コイン`, 'win');
+      p.progress = Math.min(GOAL, p.progress + bonus);
+      addLog(`COMBO x${p.comboCount} ボーナス！${p.name}に+${bonus}`, 'win');
     }
   }
   const bonusTxt = ((p.multiplierFactor||1)>1||comboMult>1) ? `（${rawTotal}→×${((p.multiplierFactor||1)*comboMult).toFixed(2)}）` : '';
@@ -1056,9 +1055,9 @@ function triggerAuras(p){
     const t = pick();
     if(t.effects.immuneStealPermanent){ /* 被弾側の防御は自分のアクションではないため無音 */ }
     else {
-      const amount = Math.max(1, Math.round(t.coins * 0.18 * (1-(t.debuffResist||0))));
-      t.coins = Math.max(0, t.coins - amount);
-      p.coins += amount;
+      const amount = Math.max(1, Math.round(t.progress * 0.18 * (1-(t.debuffResist||0))));
+      t.progress = Math.max(0, t.progress - amount);
+      p.progress = Math.min(GOAL, p.progress + amount);
       t.lastAttackerBy = p.name;
       addLog(`${p.name}のコイン強奪トラップが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true;
     }
@@ -1181,7 +1180,7 @@ function startAuction(p, slotIdx){
   if(!item || state.shop.lockedUntil[slotIdx] > Date.now() || state.shop.auctions[slotIdx]) return;
   const basePrice = priceFor(p, item);
   const price = Math.round(basePrice * MULT_SEQ[0]);
-  if(p.coins < price) { addLog(`${p.name} はコインが足りず入札できなかった。`); if(p.isHuman) sfxFail(); return; }
+  if(p.progress < price) { addLog(`${p.name} は進捗が足りず入札できなかった。`); if(p.isHuman) sfxFail(); return; }
   state.shop.auctions[slotIdx] = { bidder: p.id, tier: 0, basePrice, deadline: Date.now()+spd(AUCTION_MS) };
   if(p.comboCount>0){ addLog(`${p.name} のCOMBOが途切れた（ショップに参加）`); }
   p.comboCount = 0; // オークションに参加するとコンボの勢いが途切れる
@@ -1198,7 +1197,7 @@ function raiseAuction(p, slotIdx, targetTier){
   const tier = (targetTier!==undefined) ? targetTier : auc.tier + 1;
   if(tier <= auc.tier || tier >= MULT_SEQ.length) return;
   const price = Math.round(auc.basePrice * MULT_SEQ[tier]);
-  if(p.coins < price) { if(p.isHuman){ addLog(`${p.name} はコインが足りず競り負けた。`); sfxFail(); } return; }
+  if(p.progress < price) { if(p.isHuman){ addLog(`${p.name} は進捗が足りず競り負けた。`); sfxFail(); } return; }
   auc.bidder = p.id;
   auc.tier = tier;
   auc.deadline = Date.now()+spd(AUCTION_MS);
@@ -1236,14 +1235,14 @@ function resolveAuctionSlot(slotIdx){
   const bidder = state.players.find(x=>x.id===auc.bidder);
   if(!bidder){ state.shop.slots[slotIdx] = null; return; }
   const price = Math.round(auc.basePrice * MULT_SEQ[auc.tier]);
-  if(bidder.coins < price){
+  if(bidder.progress < price){
     addLog(`${bidder.name} は支払えず「${item.name}」の落札が流れた…`, 'atk');
     state.shop.slots[slotIdx] = null;
     if(bidder.isHuman) sfxFail();
     renderScroll();
     return;
   }
-  bidder.coins -= price;
+  bidder.progress -= price;
   finalizePurchase(slotIdx, bidder, item, price, '落札');
 }
 
@@ -1261,8 +1260,8 @@ function feverBuy(p, slotIdx){
   const item = state.shop.slots[slotIdx];
   if(!item) return;
   const price = feverBuyPrice(p, slotIdx);
-  if(p.coins < price){ if(p.isHuman){ addLog(`${p.name} はコインが足りずフィーバー購入できなかった。`); sfxFail(); } return; }
-  p.coins -= price;
+  if(p.progress < price){ if(p.isHuman){ addLog(`${p.name} は進捗が足りずフィーバー購入できなかった。`); sfxFail(); } return; }
+  p.progress -= price;
   state.shop.auctions[slotIdx] = null; // 進行中の入札があれば打ち切り
   p.comboCount = 0; // ショップ参加なのでコンボは途切れる
   finalizePurchase(slotIdx, p, item, price, 'フィーバー購入');
@@ -1349,7 +1348,7 @@ setInterval(()=>{
   }
   if(now >= (state.nextInterestAt||0)){
     for(const p of state.players){
-      if(p.interestRate){ p.coins += Math.max(1, Math.round(p.progress * p.interestRate)); }
+      if(p.interestRate){ p.progress = Math.min(GOAL, p.progress + Math.max(1, Math.round(p.progress * p.interestRate))); }
     }
     state.nextInterestAt = now + 10000;
   }
@@ -1432,7 +1431,7 @@ function aiAct(p){
       const it = state.shop.slots[i];
       if(!it || state.shop.lockedUntil[i] > now) continue;
       const cost = feverBuyPrice(p, i);
-      if(p.coins >= cost && classifyItem(it)!=='junk') options.push(i);
+      if(p.progress >= cost && classifyItem(it)!=='junk') options.push(i);
     }
     if(options.length>0){
       feverBuy(p, options[Math.floor(Math.random()*options.length)]);
@@ -1449,7 +1448,7 @@ function aiAct(p){
       const auc = state.shop.auctions[i];
       if(!auc){
         const price = Math.round(priceFor(p, it) * MULT_SEQ[0]);
-        if(p.coins >= price) candidates.push({idx:i, action:'start', cat, weight:conf.weights[cat]||1});
+        if(p.progress >= price) candidates.push({idx:i, action:'start', cat, weight:conf.weights[cat]||1});
       } else if(auc.bidder !== p.id){
         const timeSinceLastBid = AUCTION_MS - (auc.deadline - now);
         const reactDelay = 1300 / effRaiseBoldness; // 積極的な性格・難易度ほど反応が早い
@@ -1457,7 +1456,7 @@ function aiAct(p){
         const nextTier = auc.tier + 1;
         if(nextTier < MULT_SEQ.length){
           const price = Math.round(auc.basePrice * MULT_SEQ[nextTier]);
-          if(p.coins >= price) candidates.push({idx:i, action:'raise', cat, weight:(conf.weights[cat]||1)*effRaiseBoldness});
+          if(p.progress >= price) candidates.push({idx:i, action:'raise', cat, weight:(conf.weights[cat]||1)*effRaiseBoldness});
         }
       }
     }
@@ -1554,7 +1553,7 @@ function renderScroll(){
         <div class="item-dots">${itemDots}</div>
       </div>
       <div class="opp-bar"><div class="opp-bar-fill" style="width:${Math.min(100,p.progress/GOAL*100)}%;background:${oc}"></div></div>
-      <div class="opp-score mono">${fmt(p.progress)}${human.effects.seeCoinsPermanent?` ／ ${p.coins}C`:''}</div>
+      <div class="opp-score mono">${fmt(p.progress)}${human.effects.seeCoinsPermanent && (p.multiplierFactor||1)>1 ? ` ／ ×${(p.multiplierFactor||1).toFixed(2)}` : ''}</div>
       ${auraTotal>0 ? `<div class="opp-score mono">トラップ計${Math.round(auraTotal*100)}%</div>` : ''}
     </div>`;
   });
@@ -1592,7 +1591,7 @@ function renderScroll(){
       html += `<div class="slot"><div class="empty">空き棚</div></div>`;
     } else {
       const rar = RARITY[item.rarity];
-      const feverBtn = feverActive ? `<button class="fever-buy-btn" ${human.coins>=feverBuyPrice(human,i)?'':'disabled'} data-action="feverbuy" data-slot="${i}">FEVER BUY（${feverBuyPrice(human,i)}C）</button>` : '';
+      const feverBtn = feverActive ? `<button class="fever-buy-btn" ${human.progress>=feverBuyPrice(human,i)?'':'disabled'} data-action="feverbuy" data-slot="${i}">FEVER BUY（${feverBuyPrice(human,i)}）</button>` : '';
       if(auc){
         const bidder = state.players.find(x=>x.id===auc.bidder);
         const curPrice = Math.round(auc.basePrice * MULT_SEQ[auc.tier]);
@@ -1605,7 +1604,7 @@ function renderScroll(){
           btnHtml = `<button disabled>YOU LEAD</button>`;
         } else if(nextTier < MULT_SEQ.length){
           const tp = Math.round(auc.basePrice * MULT_SEQ[nextTier]);
-          const can = human.coins >= tp;
+          const can = human.progress >= tp;
           priceBlockHtml = `<div class="price-label">現在${curPrice}C ／ 競るには</div><div class="price-big raise mono" style="color:${can?'var(--purple)':'var(--sub)'}">${tp}C</div>`;
           btnHtml = `<button ${can?'':'disabled'} data-action="raise" data-slot="${i}" data-tier="${nextTier}">x${MULT_SEQ[nextTier]} BID</button>`;
         } else {
@@ -1623,7 +1622,7 @@ function renderScroll(){
         </div>`;
       } else {
         const price = Math.round(priceFor(human, item) * MULT_SEQ[0]);
-        const canBuy = human.coins>=price;
+        const canBuy = human.progress>=price;
         html += `<div class="slot ${feverActive?'fever-slot':''}" style="border-color:${rar.color}">
           <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
           <div class="iname">${item.name}</div>
@@ -1675,7 +1674,7 @@ function updateSelfLive(){
   if(label) label.textContent = fmt(human.progress)+' / 9999';
 
   const coinsEl = document.getElementById('selfCoins');
-  if(coinsEl) coinsEl.textContent = human.coins;
+  if(coinsEl) coinsEl.textContent = human.progress;
   const rangeEl = document.getElementById('selfRange');
   if(rangeEl){ const r = diceRange(human); rangeEl.textContent = r.min+'-'+r.max; }
   const bonusEl = document.getElementById('selfBonus');
@@ -1780,10 +1779,10 @@ function renderBadges(p, now){
   }
   if(p.effects.comboSetAComplete) b+=`<span class="badge combo-badge active">欠片コンプ！×10</span>`;
   if(p.flags>0) b+=`<span class="badge">旗×${p.flags}</span>`;
-  if(checkpointBuffActive(p)) b+=`<span class="badge buff">旗バフ×1.2（残り${Math.ceil((state.checkpointBuff.expiresAt-now)/1000)}秒）</span>`;
+  if(checkpointBuffActive(p)) b+=`<span class="badge buff">旗バフ×1.35（残り${Math.ceil((state.checkpointBuff.expiresAt-now)/1000)}秒）</span>`;
   if(p.collectorLevel>0) b+=`<span class="badge">収集の力+${(p.collectorLevel||0)*Math.floor((p.totalItemsOwned||0)/3)}（所持${p.totalItemsOwned||0}）</span>`;
   if(p.comboCount>=2){
-    b+=`<span class="badge combo-badge active">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,60)*0.03).toFixed(2)}）</span>`;
+    b+=`<span class="badge combo-badge active">COMBO x${p.comboCount}（出目×${(1+Math.min(p.comboCount,80)*0.05).toFixed(2)}）</span>`;
   } else {
     b+=`<span class="badge combo-badge">COMBO</span>`;
   }
@@ -1832,7 +1831,7 @@ function renderWin(){
         <b style="color:${color}">${p.name}</b>
         <span class="mono" style="margin-left:auto;color:${color}">${fmt(p.progress)}</span>
       </div>
-      <div class="result-stats mono">ダイス×${p.diceCount} ／ 出目×${(p.multiplierFactor||1).toFixed(2)} ／ ボーナス+${p.flatRollBonus||0} ／ コイン${p.coins} ／ 旗×${p.flags||0}</div>
+      <div class="result-stats mono">ダイス×${p.diceCount} ／ 出目×${(p.multiplierFactor||1).toFixed(2)} ／ ボーナス+${p.flatRollBonus||0} ／ 旗×${p.flags||0}</div>
       <div class="result-items">${items}</div>
     </div>`;
   });
@@ -1921,7 +1920,7 @@ function uiOpenHowTo(){
       <div class="howto-sec"><b>ITEM TYPES ／ アイテムの種類</b><p>
       ・加速系：追加ダイス、出目+◯、倍化の指輪など。出目そのものを底上げする<br>
       ・防御系：妨害耐性、盗難耐性、目視回避など。妨害アイテムの効果を軽減・無効化する<br>
-      ・情報系：望遠鏡（相手のコインが見える）、予兆センサー、先行入荷通知（次の入荷とフィーバータイムの予告が見える）<br>
+      ・情報系：望遠鏡（相手の出目倍率が見える）、予兆センサー、先行入荷通知（次の入荷とフィーバータイムの予告が見える）<br>
       ・ハズレ：見た目は正規品と同じだが効果なし。よく読まずに連打すると引っかかる<br>
       ・特殊ダイス：出目が固定パターンの追加ダイス。当たり外れがある<br>
       ・コンボ専用の欠片：単体では無力だが、3種類すべて揃うと合計出目が実質10倍に。奪い合いになりやすい</p></div>
@@ -2092,7 +2091,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v2.5</div>
+        <div class="version-tag">v3.1</div>
       </div>
     </div>
   `;
