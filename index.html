@@ -420,7 +420,7 @@ let BGM_TRACKS = [
 ];
 // 表示上のパーセントと実際の音量を分離する（表示100%＝実際30%、つまり表示50%＝実際15%）
 const BGM_VOLUME_SCALE = 0.3;
-const bgmSettings = { on:true, displayVolume:50 };
+const bgmSettings = { on:true, displayVolume:30 };
 function actualBgmVolume(){ return (bgmSettings.displayVolume/100) * BGM_VOLUME_SCALE; }
 
 // ---------- bgmフォルダの中身をGitHub APIから自動取得 ----------
@@ -2073,7 +2073,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v2.2</div>
+        <div class="version-tag">v2.3</div>
       </div>
     </div>
   `;
