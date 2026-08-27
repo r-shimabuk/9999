@@ -145,20 +145,25 @@ html,body{
 .shop-slots{display:flex;align-items:stretch;gap:6px;margin-bottom:6px;}
 .slot{flex:1;background:transparent;border:1.5px solid var(--sub);border-radius:8px;padding:3px;height:160px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;overflow:hidden;}
 .slot.fever-slot{height:196px;}
-.fever-buy-btn{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:9.5px;line-height:1.2;cursor:pointer;background:var(--orange);border:2px solid var(--orange);color:#fff;}
-.fever-buy-btn:disabled{background:transparent;border-color:var(--sub);color:var(--sub);}
-.role-shop.fever-live{animation:feverGlow 0.6s ease-in-out infinite alternate;}
-@keyframes feverGlow{0%{box-shadow:0 0 4px rgba(255,122,0,0.3);}100%{box-shadow:0 0 14px rgba(255,122,0,0.8);}}
+.fever-buy-btn{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:9.5px;line-height:1.2;cursor:pointer;background:transparent;border:2px solid var(--orange);color:var(--orange);animation:feverBtnPulse 1s ease-in-out infinite alternate;}
+.fever-buy-btn:disabled{background:transparent;border-color:var(--sub);color:var(--sub);animation:none;}
+@keyframes feverBtnPulse{0%{box-shadow:0 0 0 rgba(255,122,0,0);}100%{box-shadow:0 0 6px rgba(255,122,0,0.6);}}
+.role-shop.fever-live{animation:feverGlow 1.1s ease-in-out infinite alternate;}
+@keyframes feverGlow{0%{box-shadow:0 0 2px rgba(255,122,0,0.15);}100%{box-shadow:0 0 9px rgba(255,122,0,0.45);}}
 .fever-tag{color:var(--orange);font-weight:900;font-size:9px;margin-left:8px;letter-spacing:0.5px;}
-.fever-banner{position:fixed;top:50%;left:0;right:0;transform:translateY(-50%);z-index:80;background:var(--orange);color:#fff;text-align:center;padding:16px 10px;box-shadow:0 4px 24px rgba(0,0,0,0.35);animation:feverBannerPop 2.6s ease-in-out forwards;pointer-events:none;}
-.fever-banner-title{font-size:22px;font-weight:900;letter-spacing:2px;font-family:'Share Tech Mono',monospace;}
-.fever-banner-sub{font-size:12px;font-weight:700;margin-top:6px;letter-spacing:0.5px;}
+
+/* フィーバータイム演出：ゲーム全体のアウトライン基調デザインに合わせたバナー */
+.fever-banner{position:fixed;top:16%;left:50%;transform:translate(-50%,-50%);z-index:80;pointer-events:none;animation:feverBannerPop 2.6s cubic-bezier(.22,.9,.3,1) forwards;}
+.fever-banner-card{background:var(--bg);border:2.5px solid var(--orange);border-radius:16px;padding:12px 26px;text-align:center;box-shadow:0 0 0 5px rgba(255,122,0,0.12), 0 10px 26px rgba(27,42,74,0.18);}
+.fever-banner-title{font-family:'Share Tech Mono',monospace;font-size:19px;font-weight:900;letter-spacing:3px;color:var(--orange);white-space:nowrap;}
+.fever-banner-title .fever-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);margin:0 6px;vertical-align:middle;}
+.fever-banner-sub{font-size:10.5px;font-weight:700;margin-top:5px;letter-spacing:0.3px;color:var(--ink);}
 @keyframes feverBannerPop{
-  0%{opacity:0;transform:translateY(-50%) scale(0.85);}
-  10%{opacity:1;transform:translateY(-50%) scale(1.04);}
-  16%{transform:translateY(-50%) scale(1);}
-  82%{opacity:1;}
-  100%{opacity:0;}
+  0%{opacity:0;transform:translate(-50%,-70%) scale(0.9);}
+  12%{opacity:1;transform:translate(-50%,-50%) scale(1.02);}
+  18%{transform:translate(-50%,-50%) scale(1);}
+  85%{opacity:1;}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(0.98);}
 }
 .slot.locked{opacity:0.4;}
 .slot.auction{animation:auctionPulse 1s ease-in-out infinite;}
@@ -584,7 +589,10 @@ function showFeverBanner(){
   const el = document.createElement('div');
   el.id = 'feverBanner';
   el.className = 'fever-banner';
-  el.innerHTML = `<div class="fever-banner-title">FEVER TIME突入！</div><div class="fever-banner-sub">お金があれば何でも買える！</div>`;
+  el.innerHTML = `<div class="fever-banner-card">
+    <div class="fever-banner-title"><span class="fever-dot"></span>FEVER TIME<span class="fever-dot"></span></div>
+    <div class="fever-banner-sub">お金があれば何でも買える！</div>
+  </div>`;
   document.body.appendChild(el);
   setTimeout(()=>{ el.remove(); }, 2600);
 }
@@ -756,6 +764,7 @@ function newPlayer(id, name, isHuman, personality){
 
 let state = {
   running:false,
+  awaitingFirstRoll:true,
   players:[],
   shop:{slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+spd(SHOP_RESTOCK_MS)},
   chain:{type:null, expiresAt:0, excludeLeader:true},
@@ -781,7 +790,7 @@ function addLog(text, cls){
 // ---------- オートセーブ（自分のブラウザ内に保存。Claude.aiのプレビュー内では動作しない場合があります） ----------
 const SAVE_KEY = 'game9999_autosave_v1';
 function saveGame(){
-  if(!state.running || state.winner || state.paused) return;
+  if(!state.running || state.winner || state.paused || state.awaitingFirstRoll) return;
   try{
     const payload = {
       players: state.players,
@@ -820,6 +829,7 @@ function initGame(){
   state.checkpointBuff = null;
   state.feverTime = null;
   state.nextFeverAt = Date.now() + (60000 + Math.random()*240000); // 60〜300秒後
+  state.awaitingFirstRoll = true; // 自分が最初にサイコロを振るまでCPU・タイマー類は動かさない
   lastLeaderId = null;
   lastSelfRank = null;
   state.log = [];
@@ -894,6 +904,15 @@ function rollOne(p){
 
 function requestRoll(p){
   if(state.winner || state.paused) return;
+  if(p.isHuman && state.awaitingFirstRoll){
+    state.awaitingFirstRoll = false; // 自分が振った瞬間に、CPUやタイマー類が動き出す
+    // 待機中に実時間が経過していても、各種タイマーは今から数え直す
+    const n = Date.now();
+    state.shop.nextRestock = n + spd(SHOP_RESTOCK_MS);
+    state.shop.nextQuickRestock = n + spd(QUICK_RESTOCK_MS);
+    state.nextInterestAt = n + 10000;
+    state.nextFeverAt = n + (60000 + Math.random()*240000);
+  }
   const now = Date.now();
   if(p.rollAnim.active) return;
   if(now < p.busyUntil) return;
@@ -1056,7 +1075,7 @@ function triggerAuras(p){
 
 // fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
 setInterval(()=>{
-  if(!state.running || state.winner || state.paused) return;
+  if(!state.running || state.winner || state.paused || state.awaitingFirstRoll) return;
   const now = Date.now();
   for(const p of state.players){
     if(p.rollAnim.active){
@@ -1309,7 +1328,7 @@ function applyEffect(p, item){
 
 // ---------- game tick (shop timers / AI decisions) ----------
 setInterval(()=>{
-  if(!state.running || state.winner || state.paused) return;
+  if(!state.running || state.winner || state.paused || state.awaitingFirstRoll) return;
   const now = Date.now();
   if(now >= (state.nextAutoSaveAt||0)){
     saveGame();
@@ -1684,7 +1703,7 @@ function updateSelfLive(){
     } else {
       cdFill.style.width='100%';
       cdFill.className='cooldown-bar-fill';
-      cdLabel.textContent = '準備完了 — 振れます' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:'');
+      cdLabel.textContent = state.awaitingFirstRoll ? 'サイコロを振ってスタート！' : ('準備完了 — 振れます' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:''));
     }
   }
   const badgesEl = document.getElementById('selfBadges');
@@ -2073,7 +2092,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v2.3</div>
+        <div class="version-tag">v2.5</div>
       </div>
     </div>
   `;
