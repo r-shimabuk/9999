@@ -297,7 +297,7 @@ document.addEventListener('touchmove', function(e){
 // 万が一拡大されてしまった場合の保険：viewportを再適用して強制的に元の倍率に戻す
 // ※ 属性の書き換えだけでは最近のiOS Safariで効かないことがあるため、
 //   タグ自体を一度削除して作り直す、より強い方式も併用する
-const VIEWPORT_CONTENT = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no';
+const VIEWPORT_CONTENT = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
 function forceResetZoom(){
   const old = document.querySelector('meta[name="viewport"]');
   if(old) old.remove();
@@ -1881,7 +1881,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v1.1</div>
+        <div class="version-tag">v1.2</div>
       </div>
     </div>
   `;
