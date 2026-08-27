@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>9999</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap');
@@ -48,7 +48,7 @@ html,body{
   max-width:480px;margin:0 auto;
   display:grid;
   grid-template-rows:auto minmax(0,1fr) auto;
-  padding:3px 3px calc(22px + env(safe-area-inset-bottom, 0px));
+  padding:3px 3px calc(30px + env(safe-area-inset-bottom, 0px));
   row-gap:2px;
   overflow:hidden;
 }
@@ -1881,7 +1881,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v1.0</div>
+        <div class="version-tag">v1.1</div>
       </div>
     </div>
   `;
