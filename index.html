@@ -64,6 +64,14 @@ html,body{
 .settings-modal h3{margin:0 0 14px;font-size:14px;color:var(--purple);}
 .settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:12px;color:var(--ink);}
 .sound-toggle{padding:6px 14px;border-radius:8px;border:2px solid var(--purple);color:var(--purple);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
+.speed-btn{flex:1;padding:8px 4px;border-radius:8px;border:2px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:12px;cursor:pointer;}
+.speed-btn.active{border-color:var(--purple);color:var(--purple);}
+.diff-btn-row{display:flex;gap:6px;margin-bottom:12px;}
+.diff-btn{flex:1;padding:10px 4px;border-radius:9px;border:2px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
+.diff-btn.active{border-color:var(--orange);color:var(--orange);}
+.diff-btn.locked{opacity:0.45;cursor:not-allowed;}
+.diff-desc-box{border:1.5px solid var(--sub);border-radius:9px;padding:8px 10px;text-align:left;}
+.unlock-msg{color:var(--orange);font-weight:900;font-size:11px;letter-spacing:0.5px;margin-bottom:10px;}
 .sound-toggle.off{border-color:var(--sub);color:var(--sub);}
 .settings-modal input[type=range]{width:100%;accent-color:var(--purple);}
 .settings-close{width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--sub);background:transparent;color:var(--sub);font-weight:700;cursor:pointer;font-size:12px;margin-top:4px;}
@@ -123,6 +131,12 @@ html,body{
 /* shop */
 .shop-slots{display:flex;align-items:stretch;gap:6px;margin-bottom:6px;}
 .slot{flex:1;background:transparent;border:1.5px solid var(--sub);border-radius:8px;padding:3px;height:160px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;overflow:hidden;}
+.slot.fever-slot{height:196px;}
+.fever-buy-btn{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:9.5px;line-height:1.2;cursor:pointer;background:var(--orange);border:2px solid var(--orange);color:#fff;}
+.fever-buy-btn:disabled{background:transparent;border-color:var(--sub);color:var(--sub);}
+.role-shop.fever-live{animation:feverGlow 0.6s ease-in-out infinite alternate;}
+@keyframes feverGlow{0%{box-shadow:0 0 4px rgba(255,122,0,0.3);}100%{box-shadow:0 0 14px rgba(255,122,0,0.8);}}
+.fever-tag{color:var(--orange);font-weight:900;font-size:9px;margin-left:8px;letter-spacing:0.5px;}
 .slot.locked{opacity:0.4;}
 .slot.auction{animation:auctionPulse 1s ease-in-out infinite;}
 .slot.auction.mine{animation:auctionPulseMine 0.7s ease-in-out infinite;border-width:3px!important;background:rgba(30,111,255,0.08);}
@@ -307,7 +321,12 @@ document.addEventListener('pointerdown', function(e){
   const slot = parseInt(btn.dataset.slot, 10);
   if(action==='buy'){ uiBuy(slot); }
   else if(action==='raise'){ uiRaiseTo(slot, parseInt(btn.dataset.tier,10)); }
+  else if(action==='feverbuy'){ feverBuy(state.players[0], slot); }
   else if(action==='reset'){ playOuSound(); uiReset(); }
+  else if(action==='settings'){ uiOpenSettings(); }
+  else if(action==='selectdiff'){ uiSelectDifficulty(btn.dataset.diff); }
+  else if(action==='canceldiff'){ sfxClick(); uiCloseDifficultyModal(); }
+  else if(action==='startdiff'){ uiConfirmDifficultyStart(); }
 }, {passive:false});
 
 // ---------- 実音源（アップロードされたmp3）----------
@@ -338,6 +357,12 @@ function startSpinSound(){
 function stopSpinSound(){
   try{ SND_SPIN.pause(); SND_SPIN.currentTime = 0; }catch(e){}
 }
+// ゲーム終了・リスタート時に、鳴りっぱなしになりうる効果音を全てリセットする（BGMは除く）
+function resetAllSfx(){
+  [SND_CLICK, SND_BID, SND_SPIN, SND_BUY, SND_PETA, SND_OU].forEach(a=>{
+    try{ a.pause(); a.currentTime = 0; }catch(e){}
+  });
+}
 
 let audioCtx = null;
 let audioUnlocked = false;
@@ -361,6 +386,10 @@ const soundSettings = { on:true, volume:1.0 };
 
 // ---------- BGM（同じ場所に bgm.mp3 を置くと自動的に読み込まれる）----------
 const bgmSettings = { on:true, volume:0.5 };
+
+// ---------- ゲーム速度（回転時間・AI行動間隔・オークション時間などに反映）----------
+const speedSettings = { multiplier: 1 };
+function spd(ms){ return ms / speedSettings.multiplier; }
 const BGM = new Audio('bgm.mp3');
 BGM.loop = true;
 let bgmStarted = false;
@@ -595,7 +624,7 @@ function newPlayer(id, name, isHuman, personality){
 let state = {
   running:false,
   players:[],
-  shop:{slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+SHOP_RESTOCK_MS},
+  shop:{slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+spd(SHOP_RESTOCK_MS)},
   chain:{type:null, expiresAt:0, excludeLeader:true},
   log:[],
   winner:null,
@@ -604,6 +633,10 @@ let state = {
   lastGlobalMaxRoll:0,
   checkpointsClaimed:{},
   checkpointBuff:null,
+  paused:false,
+  difficulty:'easy',
+  feverTime:null,
+  nextFeverAt:0,
 };
 
 function addLog(text, cls){
@@ -615,11 +648,12 @@ function addLog(text, cls){
 // ---------- オートセーブ（自分のブラウザ内に保存。Claude.aiのプレビュー内では動作しない場合があります） ----------
 const SAVE_KEY = 'game9999_autosave_v1';
 function saveGame(){
-  if(!state.running || state.winner) return;
+  if(!state.running || state.winner || state.paused) return;
   try{
     const payload = {
       players: state.players,
       lastGlobalMaxRoll: state.lastGlobalMaxRoll,
+      difficulty: state.difficulty,
       ts: Date.now(),
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
@@ -646,11 +680,13 @@ function initGame(){
     newPlayer(2, NAMES[2], false, 'economist'),
     newPlayer(3, NAMES[3], false, 'gambler'),
   ];
-  state.shop = {slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+SHOP_RESTOCK_MS, nextQuickRestock:Date.now()+QUICK_RESTOCK_MS, warned:false};
+  state.shop = {slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+spd(SHOP_RESTOCK_MS), nextQuickRestock:Date.now()+spd(QUICK_RESTOCK_MS), warned:false};
   state.chain = {type:null, expiresAt:0, excludeLeader:true};
   state.nextInterestAt = Date.now()+10000;
   state.checkpointsClaimed = {};
   state.checkpointBuff = null;
+  state.feverTime = null;
+  state.nextFeverAt = Date.now() + (120000 + Math.random()*180000); // 2〜5分後
   lastLeaderId = null;
   lastSelfRank = null;
   state.log = [];
@@ -724,7 +760,7 @@ function rollOne(p){
 }
 
 function requestRoll(p){
-  if(state.winner) return;
+  if(state.winner || state.paused) return;
   const now = Date.now();
   if(p.rollAnim.active) return;
   if(now < p.busyUntil) return;
@@ -732,7 +768,7 @@ function requestRoll(p){
     addLog(`${p.name} はゲージ凍結中で振れない。`);
     return;
   }
-  const rawDur = ROLL_ANIM_MS + Math.random()*400;
+  const rawDur = spd(ROLL_ANIM_MS + Math.random()*400);
   const dur = Math.max(180, rawDur - (p.spinReduction||0));
   p.rollAnim = {active:true, startedAt: now, endsAt: now+dur, dur, disp: 1+Math.floor(Math.random()*9)};
   p.busyUntil = now + dur;
@@ -802,6 +838,7 @@ function finalizeRoll(p){
   if(newLeader.id !== lastLeaderId){ if(lastLeaderId!==null && p.isHuman) sfxLeaderChange(); lastLeaderId = newLeader.id; }
   if(p.progress >= GOAL){
     state.winner = p;
+    stopSpinSound();
     clearSavedGame();
     addLog(`${p.name} が 9999 に到達！勝利！`, 'win');
     if(p.isHuman) sfxWin();
@@ -876,7 +913,7 @@ function triggerAuras(p){
 
 // fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
 setInterval(()=>{
-  if(!state.running || state.winner) return;
+  if(!state.running || state.winner || state.paused) return;
   const now = Date.now();
   for(const p of state.players){
     if(p.rollAnim.active){
@@ -977,13 +1014,13 @@ function priceFor(p, item){
 }
 
 function startAuction(p, slotIdx){
-  if(state.winner) return;
+  if(state.winner || state.paused) return;
   const item = state.shop.slots[slotIdx];
   if(!item || state.shop.lockedUntil[slotIdx] > Date.now() || state.shop.auctions[slotIdx]) return;
   const basePrice = priceFor(p, item);
   const price = Math.round(basePrice * MULT_SEQ[0]);
   if(p.coins < price) { addLog(`${p.name} はコインが足りず入札できなかった。`); if(p.isHuman) sfxFail(); return; }
-  state.shop.auctions[slotIdx] = { bidder: p.id, tier: 0, basePrice, deadline: Date.now()+AUCTION_MS };
+  state.shop.auctions[slotIdx] = { bidder: p.id, tier: 0, basePrice, deadline: Date.now()+spd(AUCTION_MS) };
   if(p.comboCount>0){ addLog(`${p.name} のCOMBOが途切れた（ショップに参加）`); }
   p.comboCount = 0; // オークションに参加するとコンボの勢いが途切れる
   addLog(`${p.name} が「${item.name}」に${price}コインで入札！誰か競る？（${AUCTION_MS/1000}秒）`);
@@ -992,7 +1029,7 @@ function startAuction(p, slotIdx){
 }
 
 function raiseAuction(p, slotIdx, targetTier){
-  if(state.winner) return;
+  if(state.winner || state.paused) return;
   const auc = state.shop.auctions[slotIdx];
   const item = state.shop.slots[slotIdx];
   if(!auc || !item || auc.bidder === p.id) return;
@@ -1002,10 +1039,29 @@ function raiseAuction(p, slotIdx, targetTier){
   if(p.coins < price) { if(p.isHuman){ addLog(`${p.name} はコインが足りず競り負けた。`); sfxFail(); } return; }
   auc.bidder = p.id;
   auc.tier = tier;
-  auc.deadline = Date.now()+AUCTION_MS;
+  auc.deadline = Date.now()+spd(AUCTION_MS);
   p.comboCount = 0; // 競り上げに参加するとコンボの勢いが途切れる
   addLog(`${p.name} が${MULT_SEQ[tier]}倍（${price}コイン）で競り上げた！`);
   if(p.isHuman) sfxBidRaise(tier);
+  renderScroll();
+}
+
+// 落札・購入を確定させる共通処理（通常オークション・フィーバー購入の両方から使う）
+function finalizePurchase(slotIdx, bidder, item, price, logSuffix){
+  state.shop.slots[slotIdx] = null;
+  bidder.purchaseCount[item.type] = (bidder.purchaseCount[item.type]||0) + 1;
+  bidder.totalItemsOwned = (bidder.totalItemsOwned||0) + 1;
+  bidder.inventory.push({name:item.name, rarity:item.rarity, desc:item.desc});
+  if(bidder.inventory.length>50) bidder.inventory.shift();
+  if(item.type==='junk'){
+    addLog(`${bidder.name} が「${item.name}」を${price}コインで${logSuffix}…完全な無駄だった`, 'atk');
+    if(bidder.isHuman) sfxFail();
+  } else {
+    applyEffect(bidder, item);
+    addLog(`${bidder.name} が「${item.name}」を${price}コインで${logSuffix}！`, 'win');
+    if(bidder.isHuman) sfxAuctionWin();
+  }
+  triggerChain('discount', bidder);
   renderScroll();
 }
 
@@ -1026,21 +1082,29 @@ function resolveAuctionSlot(slotIdx){
     return;
   }
   bidder.coins -= price;
-  state.shop.slots[slotIdx] = null;
-  bidder.purchaseCount[item.type] = (bidder.purchaseCount[item.type]||0) + 1;
-  bidder.totalItemsOwned = (bidder.totalItemsOwned||0) + 1;
-  bidder.inventory.push({name:item.name, rarity:item.rarity, desc:item.desc});
-  if(bidder.inventory.length>50) bidder.inventory.shift();
-  if(item.type==='junk'){
-    addLog(`${bidder.name} が「${item.name}」を${price}コインで落札…完全な無駄だった`, 'atk');
-    if(bidder.isHuman) sfxFail();
-  } else {
-    applyEffect(bidder, item);
-    addLog(`${bidder.name} が「${item.name}」を${price}コインで落札！`, 'win');
-    if(bidder.isHuman) sfxAuctionWin();
-  }
-  triggerChain('discount', bidder);
-  renderScroll();
+  finalizePurchase(slotIdx, bidder, item, price, '落札');
+}
+
+// フィーバータイム中：最大入札額（10倍）の2倍を払えば即座に確定購入できる
+const FEVER_MULT = MULT_SEQ[MULT_SEQ.length-1] * 2; // 通常は20倍
+function feverBuyPrice(p, slotIdx){
+  const item = state.shop.slots[slotIdx];
+  if(!item) return null;
+  const auc = state.shop.auctions[slotIdx];
+  const basePrice = auc ? auc.basePrice : priceFor(p, item);
+  return Math.round(basePrice * FEVER_MULT);
+}
+function feverBuy(p, slotIdx){
+  if(!state.feverTime || state.winner || state.paused) return;
+  const item = state.shop.slots[slotIdx];
+  if(!item) return;
+  const price = feverBuyPrice(p, slotIdx);
+  if(p.coins < price){ if(p.isHuman){ addLog(`${p.name} はコインが足りずフィーバー購入できなかった。`); sfxFail(); } return; }
+  p.coins -= price;
+  state.shop.auctions[slotIdx] = null; // 進行中の入札があれば打ち切り
+  p.comboCount = 0; // ショップ参加なのでコンボは途切れる
+  finalizePurchase(slotIdx, p, item, price, 'フィーバー購入');
+  if(p.isHuman) sfxCheckpoint(); // 派手な専用音を流用
 }
 
 function checkComboSetA(p){
@@ -1102,7 +1166,7 @@ function applyEffect(p, item){
 
 // ---------- game tick (shop timers / AI decisions) ----------
 setInterval(()=>{
-  if(!state.running || state.winner) return;
+  if(!state.running || state.winner || state.paused) return;
   const now = Date.now();
   if(now >= (state.nextAutoSaveAt||0)){
     saveGame();
@@ -1114,18 +1178,27 @@ setInterval(()=>{
   }
   if(now >= state.shop.nextRestock){
     restockBatch(false);
-    state.shop.nextRestock = now + SHOP_RESTOCK_MS;
+    state.shop.nextRestock = now + spd(SHOP_RESTOCK_MS);
     state.shop.warned = false;
   }
   if(now >= (state.shop.nextQuickRestock||0)){
     restockBatch(true);
-    state.shop.nextQuickRestock = now + QUICK_RESTOCK_MS;
+    state.shop.nextQuickRestock = now + spd(QUICK_RESTOCK_MS);
   }
   if(now >= (state.nextInterestAt||0)){
     for(const p of state.players){
       if(p.interestRate){ p.coins += Math.max(1, Math.round(p.progress * p.interestRate)); }
     }
     state.nextInterestAt = now + 10000;
+  }
+  // フィーバータイム：一定間隔で30秒だけ発生する「一気に確定購入できる」イベント
+  if(!state.feverTime && now >= (state.nextFeverAt||0)){
+    state.feverTime = { expiresAt: now + 30000 };
+    addLog('FEVER TIME！ 最大入札額の2倍払えば即座に確定購入できるぞ！', 'win');
+  } else if(state.feverTime && now >= state.feverTime.expiresAt){
+    state.feverTime = null;
+    state.nextFeverAt = now + (120000 + Math.random()*180000); // 次回は2〜5分後
+    addLog('フィーバータイムが終了した。');
   }
   for(let i=0;i<3;i++){
     const auc = state.shop.auctions[i];
@@ -1138,9 +1211,9 @@ setInterval(()=>{
     if(p.isHuman) continue;
     p.aiTimer -= 200;
     if(p.aiTimer<=0){
-      if(p.personality==='aggressive') p.aiTimer = 250 + Math.random()*350;
-      else if(p.personality==='gambler') p.aiTimer = 220 + Math.random()*800; // 不規則
-      else p.aiTimer = 380 + Math.random()*450; // economist：安定ペース
+      if(p.personality==='aggressive') p.aiTimer = spd(250 + Math.random()*350);
+      else if(p.personality==='gambler') p.aiTimer = spd(220 + Math.random()*800); // 不規則
+      else p.aiTimer = spd(380 + Math.random()*450); // economist：安定ペース
       aiAct(p);
     }
   }
@@ -1163,10 +1236,47 @@ const PERSONALITY = {
   gambler:    { actRate:0.14, weights:{offense:1.2, growth:2.2, economy:0.8, info:0.8, junk:1.0}, junkChance:0.28, raiseBoldness:1.2 },
 };
 
+// ---------- CPUの強さ（EASY / NORMAL / HARD）----------
+const DIFFICULTY_MULT = {
+  easy:   { actRate:0.55, raiseBoldness:0.65 },
+  normal: { actRate:1.0,  raiseBoldness:1.0  },
+  hard:   { actRate:1.6,  raiseBoldness:1.4  },
+};
+const DIFF_UNLOCK_KEY = 'game9999_difficulty_unlocked_v1';
+function loadDifficultyUnlocked(){
+  try{
+    const raw = localStorage.getItem(DIFF_UNLOCK_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { easy:true, normal:false, hard:false };
+}
+function saveDifficultyUnlocked(u){
+  try{ localStorage.setItem(DIFF_UNLOCK_KEY, JSON.stringify(u)); }catch(e){}
+}
+let selectedDifficulty = 'easy';
+
 function aiAct(p){
-  if(state.winner) return;
+  if(state.winner || state.paused) return;
   const conf = PERSONALITY[p.personality] || { actRate:0.16, weights:{offense:1,growth:1,economy:1,info:1,junk:0.1}, junkChance:0.1, raiseBoldness:1.0 };
-  if(Math.random() < conf.actRate){
+  const dm = DIFFICULTY_MULT[state.difficulty] || DIFFICULTY_MULT.normal;
+  const effActRate = conf.actRate * dm.actRate;
+  const effRaiseBoldness = conf.raiseBoldness * dm.raiseBoldness;
+  // フィーバータイム中は、余裕があれば低確率でフィーバー購入を狙う
+  if(state.feverTime && state.feverTime.expiresAt > Date.now() && Math.random() < 0.12){
+    const now = Date.now();
+    const options = [];
+    for(let i=0;i<3;i++){
+      const it = state.shop.slots[i];
+      if(!it || state.shop.lockedUntil[i] > now) continue;
+      const cost = feverBuyPrice(p, i);
+      if(p.coins >= cost && classifyItem(it)!=='junk') options.push(i);
+    }
+    if(options.length>0){
+      feverBuy(p, options[Math.floor(Math.random()*options.length)]);
+      return;
+    }
+  }
+  if(Math.random() < effActRate){
     const now = Date.now();
     const candidates = [];
     for(let i=0;i<3;i++){
@@ -1179,12 +1289,12 @@ function aiAct(p){
         if(p.coins >= price) candidates.push({idx:i, action:'start', cat, weight:conf.weights[cat]||1});
       } else if(auc.bidder !== p.id){
         const timeSinceLastBid = AUCTION_MS - (auc.deadline - now);
-        const reactDelay = 1300 / conf.raiseBoldness; // 積極的な性格ほど反応が早い（人間の反応猶予を確保）
+        const reactDelay = 1300 / effRaiseBoldness; // 積極的な性格・難易度ほど反応が早い
         if(timeSinceLastBid < reactDelay) continue;
         const nextTier = auc.tier + 1;
         if(nextTier < MULT_SEQ.length){
           const price = Math.round(auc.basePrice * MULT_SEQ[nextTier]);
-          if(p.coins >= price) candidates.push({idx:i, action:'raise', cat, weight:(conf.weights[cat]||1)*conf.raiseBoldness});
+          if(p.coins >= price) candidates.push({idx:i, action:'raise', cat, weight:(conf.weights[cat]||1)*effRaiseBoldness});
         }
       }
     }
@@ -1211,7 +1321,7 @@ function buildSkeleton(){
   app.innerHTML = `
     <div class="title">
       <h1>9999</h1>
-      <button class="reset settings-btn" onclick="uiOpenSettings()">SETTINGS</button>
+      <button class="reset settings-btn" data-action="settings">SETTINGS</button>
     </div>
     <div id="middleWrap">
       <div id="scrollArea"></div>
@@ -1294,10 +1404,14 @@ function renderScroll(){
   </div>`;
 
   // shop — オークション制（購入を押すと入札スタート、他の人が競れる）
-  html += `<div class="panel role-shop"><h2>SHOP（オークション制）</h2>`;
+  const feverActive = state.feverTime && state.feverTime.expiresAt > now;
+  html += `<div class="panel role-shop ${feverActive?'fever-live':''}"><h2>SHOP（オークション制）${feverActive?`<span class="fever-tag">FEVER TIME！残り${Math.ceil((state.feverTime.expiresAt-now)/1000)}秒</span>`:''}</h2>`;
   if(human.effects.seeRestockPermanent){ html += `<div class="shop-status"><span class="mono">次回入荷まで ${Math.max(0,Math.ceil((state.shop.nextRestock-now)/1000))}秒</span></div>`; }
   if(human.effects.previewPermanent && state.shop.preview){
     html += `<div class="shop-status"><span>次回入荷予告: ${state.shop.preview.map(it=>it.name).join(' ／ ')}</span></div>`;
+  }
+  if(human.effects.previewPermanent && !feverActive){
+    html += `<div class="shop-status"><span>FEVER TIME予告: あと${Math.max(0,Math.ceil((state.nextFeverAt-now)/1000))}秒</span></div>`;
   }
   html += `<div class="shop-slots">`;
   for(let i=0;i<3;i++){
@@ -1310,6 +1424,7 @@ function renderScroll(){
       html += `<div class="slot"><div class="empty">空き棚</div></div>`;
     } else {
       const rar = RARITY[item.rarity];
+      const feverBtn = feverActive ? `<button class="fever-buy-btn" ${human.coins>=feverBuyPrice(human,i)?'':'disabled'} data-action="feverbuy" data-slot="${i}">FEVER BUY（${feverBuyPrice(human,i)}C）</button>` : '';
       if(auc){
         const bidder = state.players.find(x=>x.id===auc.bidder);
         const curPrice = Math.round(auc.basePrice * MULT_SEQ[auc.tier]);
@@ -1329,24 +1444,26 @@ function renderScroll(){
           priceBlockHtml = `<div class="price-label">CURRENT ／ 現在</div><div class="price-big mono" style="color:${rar.color}">${curPrice}C</div>`;
           btnHtml = `<button disabled>MAX</button>`;
         }
-        html += `<div class="slot auction ${isMe?'mine':''}" style="border-color:${isMe?'var(--blue)':rar.color}">
+        html += `<div class="slot auction ${isMe?'mine':''} ${feverActive?'fever-slot':''}" style="border-color:${isMe?'var(--blue)':rar.color}">
           <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
           <div class="iname">${item.name}</div>
           <div class="idesc clamp2">${item.desc}</div>
           <div class="status-line" style="color:${isMe?'var(--blue)':rar.color};font-weight:700;">${isMe?'あなたが入札中！':'BIDDING・残り'+remain+'秒'}</div></div>
           <div>${priceBlockHtml}
-          ${btnHtml}</div>
+          ${btnHtml}
+          ${feverBtn}</div>
         </div>`;
       } else {
         const price = Math.round(priceFor(human, item) * MULT_SEQ[0]);
         const canBuy = human.coins>=price;
-        html += `<div class="slot" style="border-color:${rar.color}">
+        html += `<div class="slot ${feverActive?'fever-slot':''}" style="border-color:${rar.color}">
           <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
           <div class="iname">${item.name}</div>
           <div class="idesc clamp2">${item.desc}</div>
           <div class="status-line"></div></div>
           <div><div class="price-label">START ／ 開始価格</div><div class="price-big mono" style="color:${rar.color}">${price}C</div>
-          <button ${canBuy?'':'disabled'} data-action="buy" data-slot="${i}">BID</button></div>
+          <button ${canBuy?'':'disabled'} data-action="buy" data-slot="${i}">BID</button>
+          ${feverBtn}</div>
         </div>`;
       }
     }
@@ -1526,6 +1643,12 @@ function renderTargetModal(){
 }
 
 function renderWin(){
+  // 人間が勝利した場合、次の難易度を解放する
+  if(state.winner && state.winner.isHuman){
+    const unlocked = loadDifficultyUnlocked();
+    if(state.difficulty==='easy' && !unlocked.normal){ unlocked.normal = true; saveDifficultyUnlocked(unlocked); }
+    else if(state.difficulty==='normal' && !unlocked.hard){ unlocked.hard = true; saveDifficultyUnlocked(unlocked); }
+  }
   const OPP_COLORS = ['var(--red)','var(--blue)','var(--yellow)'];
   const sorted = [...state.players].sort((a,b)=>b.progress-a.progress);
   let rows = '';
@@ -1543,9 +1666,12 @@ function renderWin(){
       <div class="result-items">${items}</div>
     </div>`;
   });
+  const unlockMsg = (state.winner.isHuman && state.difficulty==='easy') ? `<div class="unlock-msg">NORMAL UNLOCKED ／ 普通が解放されました</div>`
+    : (state.winner.isHuman && state.difficulty==='normal') ? `<div class="unlock-msg">HARD UNLOCKED ／ 強いが解放されました</div>` : '';
   const html = `<div class="win-overlay">
     <div style="color:var(--sub);letter-spacing:3px;font-size:11px;margin-bottom:4px">WINNER</div>
     <h1 style="margin:0 0 12px;">${state.winner.name}</h1>
+    ${unlockMsg}
     <div class="result-list">${rows}</div>
     <button data-action="reset">もう一度</button>
   </div>`;
@@ -1574,8 +1700,10 @@ function uiCancelTarget(){ state.targetModal=null; renderScroll(); }
 function uiOpenSettings(){
   ensureAudio();
   sfxClick();
+  state.paused = true;
   const html = `<div class="overlay" id="settingsOverlay"><div class="settings-modal">
     <h3>SETTINGS ／ 設定</h3>
+    <div style="font-size:9px;color:var(--sub);margin:-8px 0 12px;">PAUSED ／ ゲームは一時停止中です</div>
     <div class="settings-row">
       <span>効果音</span>
       <button class="sound-toggle ${soundSettings.on?'':'off'}" id="soundToggleBtn" onclick="uiToggleSound()">${soundSettings.on?'ON':'OFF'}</button>
@@ -1592,6 +1720,14 @@ function uiOpenSettings(){
       <span>BGMの音量 ／ <b class="mono" id="bgmVolLabel">${Math.round(bgmSettings.volume*100)}%</b></span>
       <input type="range" min="0" max="100" value="${Math.round(bgmSettings.volume*100)}" oninput="uiSetBgmVolume(this.value)">
     </div>
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:10px;">
+      <span>SPEED ／ ゲームの速度</span>
+      <div style="display:flex;gap:6px;">
+        <button class="speed-btn ${speedSettings.multiplier===1?'active':''}" onclick="uiSetSpeed(1)">×1</button>
+        <button class="speed-btn ${speedSettings.multiplier===1.5?'active':''}" onclick="uiSetSpeed(1.5)">×1.5</button>
+        <button class="speed-btn ${speedSettings.multiplier===2?'active':''}" onclick="uiSetSpeed(2)">×2</button>
+      </div>
+    </div>
     <button class="settings-close" onclick="uiCloseSettings()">閉じる</button>
   </div></div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
@@ -1599,6 +1735,8 @@ function uiOpenSettings(){
 function uiCloseSettings(){
   const el = document.getElementById('settingsOverlay');
   if(el) el.remove();
+  state.paused = false;
+  renderScroll();
 }
 function uiToggleSound(){
   soundSettings.on = !soundSettings.on;
@@ -1624,15 +1762,83 @@ function uiSetBgmVolume(v){
   if(label) label.textContent = Math.round(bgmSettings.volume*100)+'%';
   BGM.volume = bgmSettings.volume;
 }
+function uiSetSpeed(mult){
+  speedSettings.multiplier = mult;
+  document.querySelectorAll('.speed-btn').forEach(b=>b.classList.remove('active'));
+  const el = document.getElementById('settingsOverlay');
+  if(el){
+    el.querySelectorAll('.speed-btn').forEach(b=>{
+      if(b.textContent.trim() === '×'+mult) b.classList.add('active');
+    });
+  }
+  sfxClick();
+}
 function uiReset(){
   sfxClick();
+  resetAllSfx();
   const overlays = document.querySelectorAll('.overlay,.win-overlay');
   overlays.forEach(o=>o.remove());
   state.running = false;
   renderStartScreen();
 }
-function uiStart(){ ensureAudio(); playBidSound(); clearSavedGame(); initGame(); }
+function uiStart(){ resetAllSfx(); ensureAudio(); playBidSound(); clearSavedGame(); initGame(); }
+
+// ---------- 難易度選択ポップアップ ----------
+const DIFF_INFO = {
+  easy:   { label:'EASY',   ja:'弱い',  desc:'CPUs act slowly and bid cautiously. A relaxed race.', descJa:'CPUの行動は遅く、入札も控えめ。のんびり遊べます。' },
+  normal: { label:'NORMAL', ja:'普通',  desc:'CPUs play at a standard, balanced pace.', descJa:'CPUの行動は標準的なペース。バランスの取れた対戦です。' },
+  hard:   { label:'HARD',   ja:'強い',  desc:'CPUs act fast and bid aggressively. A tough race.', descJa:'CPUの行動が速く、入札も積極的。かなり手強い対戦です。' },
+};
+function uiShowDifficultyModal(){
+  ensureAudio();
+  playBidSound();
+  const unlocked = loadDifficultyUnlocked();
+  selectedDifficulty = ['easy','normal','hard'].find(d=>unlocked[d]) || 'easy';
+  renderDifficultyModal(unlocked);
+}
+function renderDifficultyModal(unlocked){
+  const old = document.getElementById('difficultyOverlay');
+  if(old) old.remove();
+  const info = DIFF_INFO[selectedDifficulty];
+  let btns = '';
+  ['easy','normal','hard'].forEach(d=>{
+    const locked = !unlocked[d];
+    const isSel = selectedDifficulty===d;
+    btns += `<button class="diff-btn ${isSel?'active':''} ${locked?'locked':''}" ${locked?'disabled':`data-action="selectdiff" data-diff="${d}"`}>${DIFF_INFO[d].label}${locked?' 🔒':''}</button>`;
+  });
+  const html = `<div class="overlay" id="difficultyOverlay"><div class="settings-modal">
+    <h3>DIFFICULTY ／ 強さを選ぼう</h3>
+    <p class="start-desc" style="font-size:11px;margin-bottom:2px;">Choose a difficulty. Beat it to unlock the next one.</p>
+    <p class="start-desc ja" style="font-size:10px;margin-bottom:14px;">強さを選んでください。クリアすると次の強さが解放されます。</p>
+    <div class="diff-btn-row">${btns}</div>
+    <div class="diff-desc-box">
+      <p class="start-desc" style="font-size:10.5px;margin-bottom:2px;">${info.desc}</p>
+      <p class="start-desc ja" style="font-size:9.5px;margin-bottom:0;">${info.descJa}</p>
+    </div>
+    <div class="diff-btn-row" style="margin-top:8px;">
+      <button class="settings-close" data-action="canceldiff" style="margin-top:0;">CANCEL</button>
+      <button class="start-btn small" style="margin-top:0;" data-action="startdiff">GAME START</button>
+    </div>
+  </div></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+function uiSelectDifficulty(d){
+  selectedDifficulty = d;
+  sfxClick();
+  renderDifficultyModal(loadDifficultyUnlocked());
+}
+function uiCloseDifficultyModal(){
+  const el = document.getElementById('difficultyOverlay');
+  if(el) el.remove();
+}
+function uiConfirmDifficultyStart(){
+  const el = document.getElementById('difficultyOverlay');
+  if(el) el.remove();
+  state.difficulty = selectedDifficulty;
+  uiStart();
+}
 function uiResume(){
+  resetAllSfx();
   ensureAudio();
   playBidSound();
   const saved = loadSavedGame();
@@ -1647,6 +1853,7 @@ function uiResume(){
     });
   });
   state.lastGlobalMaxRoll = saved.lastGlobalMaxRoll||0;
+  state.difficulty = saved.difficulty || 'easy';
   lastLeaderId = null; lastSelfRank = null;
   updateSelfLive();
   addLog('セーブデータから再開しました。');
@@ -1669,7 +1876,7 @@ function renderStartScreen(){
         <p class="start-desc">Roll dice with 3 rivals — first to reach 9999 wins. Buy items in the shop to accelerate or sabotage others.</p>
         <p class="start-desc ja">4人でサイコロを振り合い、最初に9999に到達したプレイヤーの勝ち。ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
         <div class="start-btn-row">
-          <button class="start-btn small" onclick="uiStart()">NEW GAME</button>
+          <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
       </div>
