@@ -266,6 +266,7 @@ html,body{
 .start-desc.ja{font-size:11.5px;color:var(--sub);margin:0 0 18px;max-width:320px;}
 .start-btn{padding:10px 24px;border:1.5px solid var(--orange);border-radius:11px;background:transparent;color:var(--orange);font-weight:900;font-size:13px;letter-spacing:1px;cursor:pointer;margin-bottom:7px;}
 .start-btn-row{display:flex;gap:10px;justify-content:center;}
+.version-tag{font-size:8px;color:var(--sub);margin-top:10px;letter-spacing:1px;}
 .start-btn.small{padding:9px 20px;font-size:12px;letter-spacing:0.5px;margin-bottom:0;}
 .start-btn:active{transform:scale(0.97);}
 </style>
@@ -1880,6 +1881,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
+        <div class="version-tag">v1.0</div>
       </div>
     </div>
   `;
