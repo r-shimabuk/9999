@@ -57,7 +57,11 @@ html,body{
 .title{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;flex:0 0 auto;padding:2px 2px 0;column-gap:6px;}
 .title h1{justify-self:start;}
 .title .settings-btn{justify-self:end;}
-.bgm-track-name{justify-self:center;text-align:center;font-size:8px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;letter-spacing:0.5px;}
+.bgm-track-name{justify-self:center;text-align:center;font-size:8px;color:var(--sub);white-space:nowrap;overflow:hidden;max-width:140px;letter-spacing:0.5px;position:relative;}
+.bgm-track-name .bgm-track-inner{display:inline-block;}
+.bgm-track-name.scrolling{text-align:left;}
+.bgm-track-name.scrolling .bgm-track-inner{display:inline-flex;animation:bgmMarquee 7s linear infinite;}
+@keyframes bgmMarquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
 .title h1{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:2px;margin:0;color:var(--blue);font-weight:900;}
 .title .reset{font-size:9px;color:var(--red);background:none;border:1.5px solid var(--red);border-radius:6px;padding:3px 8px;cursor:pointer;font-weight:700;}
 .title .settings-btn{color:var(--purple);border-color:var(--purple);}
@@ -414,7 +418,10 @@ let BGM_TRACKS = [
   { file: 'bgm/track2.mp3', name: 'Track 2' },
   { file: 'bgm/track3.mp3', name: 'Track 3' },
 ];
-const bgmSettings = { on:true, volume:0.2 };
+// 表示上のパーセントと実際の音量を分離する（表示100%＝実際30%、つまり表示50%＝実際15%）
+const BGM_VOLUME_SCALE = 0.3;
+const bgmSettings = { on:true, displayVolume:50 };
+function actualBgmVolume(){ return (bgmSettings.displayVolume/100) * BGM_VOLUME_SCALE; }
 
 // ---------- bgmフォルダの中身をGitHub APIから自動取得 ----------
 // GitHub Pagesで公開している場合、bgmフォルダに音声ファイルを置くだけで
@@ -465,14 +472,28 @@ function ensureBgmGain(){
   try{
     const src = audioCtx.createMediaElementSource(BGM);
     bgmGainNode = audioCtx.createGain();
-    bgmGainNode.gain.value = bgmSettings.volume;
+    bgmGainNode.gain.value = actualBgmVolume();
     src.connect(bgmGainNode);
     bgmGainNode.connect(audioCtx.destination);
   }catch(e){}
 }
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 function updateBgmTrackDisplay(name){
   const el = document.getElementById('bgmTrackName');
-  if(el) el.textContent = name ? `♫ ${name} ♫` : '';
+  if(!el) return;
+  el.classList.remove('scrolling');
+  if(!name){ el.innerHTML = ''; return; }
+  const text = `♫ ${escapeHtml(name)} ♫`;
+  el.innerHTML = `<span class="bgm-track-inner"><span>${text}</span></span>`;
+  requestAnimationFrame(()=>{
+    const inner = el.querySelector('.bgm-track-inner');
+    if(inner && inner.scrollWidth > el.clientWidth + 1){
+      el.classList.add('scrolling');
+      el.innerHTML = `<span class="bgm-track-inner"><span>${text}&nbsp;&nbsp;&nbsp;&nbsp;</span><span>${text}&nbsp;&nbsp;&nbsp;&nbsp;</span></span>`;
+    }
+  });
 }
 function playRandomBgmTrack(){
   if(BGM_TRACKS.length===0) return;
@@ -493,7 +514,7 @@ function startBgm(){
 }
 function updateBgmPlayback(){
   if(bgmSettings.on){
-    if(bgmGainNode) bgmGainNode.gain.value = bgmSettings.volume;
+    if(bgmGainNode) bgmGainNode.gain.value = actualBgmVolume();
     if(bgmStarted){ if(BGM.paused) BGM.play().catch(()=>{}); }
   } else {
     BGM.pause();
@@ -1476,6 +1497,10 @@ function buildSkeleton(){
   const btn = document.getElementById('rollBtn');
   const fire = (e)=>{ e.preventDefault(); ensureAudio(); requestRoll(state.players[0]); };
   btn.addEventListener('pointerdown', fire, {passive:false});
+  // タイトルバーが今作られたばかりなので、すでに流れているBGMの曲名を改めて表示し直す
+  if(bgmSettings.on && currentBgmIndex>=0 && BGM_TRACKS[currentBgmIndex]){
+    updateBgmTrackDisplay(BGM_TRACKS[currentBgmIndex].name);
+  }
 }
 
 // scrollArea: opponents / chain / shop / log — freely rebuilt, never touches selfPanel or rollBtn
@@ -1841,8 +1866,8 @@ function uiOpenSettings(){
       <button class="sound-toggle ${bgmSettings.on?'':'off'}" id="bgmToggleBtn" onclick="uiToggleBgm()">${bgmSettings.on?'ON':'OFF'}</button>
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;">
-      <span>BGMの音量 ／ <b class="mono" id="bgmVolLabel">${Math.round(bgmSettings.volume*100)}%</b></span>
-      <input type="range" min="0" max="100" value="${Math.round(bgmSettings.volume*100)}" oninput="uiSetBgmVolume(this.value)">
+      <span>BGMの音量 ／ <b class="mono" id="bgmVolLabel">${Math.round(bgmSettings.displayVolume)}%</b></span>
+      <input type="range" min="0" max="100" value="${Math.round(bgmSettings.displayVolume)}" oninput="uiSetBgmVolume(this.value)">
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:10px;">
       <span>SPEED ／ ゲームの速度</span>
@@ -1924,10 +1949,10 @@ function uiToggleBgm(){
   }
 }
 function uiSetBgmVolume(v){
-  bgmSettings.volume = Math.max(0, Math.min(1, v/100));
+  bgmSettings.displayVolume = Math.max(0, Math.min(100, parseFloat(v)));
   const label = document.getElementById('bgmVolLabel');
-  if(label) label.textContent = Math.round(bgmSettings.volume*100)+'%';
-  if(bgmGainNode) bgmGainNode.gain.value = bgmSettings.volume;
+  if(label) label.textContent = Math.round(bgmSettings.displayVolume)+'%';
+  if(bgmGainNode) bgmGainNode.gain.value = actualBgmVolume();
 }
 function uiSetSpeed(mult){
   speedSettings.multiplier = mult;
@@ -2046,7 +2071,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v1.9</div>
+        <div class="version-tag">v2.1</div>
       </div>
     </div>
   `;
