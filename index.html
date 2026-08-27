@@ -48,7 +48,7 @@ html,body{
   max-width:480px;margin:0 auto;
   display:grid;
   grid-template-rows:auto minmax(0,1fr) auto;
-  padding:3px 3px 0;
+  padding:3px 3px calc(10px + env(safe-area-inset-bottom, 0px));
   row-gap:2px;
   overflow:hidden;
 }
@@ -75,13 +75,14 @@ html,body{
 .sound-toggle.off{border-color:var(--sub);color:var(--sub);}
 .settings-modal input[type=range]{width:100%;accent-color:var(--purple);}
 .settings-close{width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--sub);background:transparent;color:var(--sub);font-weight:700;cursor:pointer;font-size:12px;margin-top:4px;}
+.diff-btn-row .settings-close,.diff-btn-row .start-btn{width:auto;}
 
 /* middleWrap: 中央の可変エリア（SHOP等＋ITEMS）。この行の高さは常に「画面残り分」に固定される */
 #middleWrap{min-height:0;display:flex;flex-direction:column;gap:2px;overflow:hidden;}
 
 /* scroll area: 相手/チェイン/ショップ。中身が多いときはここだけ内側スクロール */
 #scrollArea{flex:0 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
-#invPanel{flex:1 1 auto;min-height:40px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
+#invPanel{flex:1 1 auto;min-height:30px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
 #invPanel h2{color:var(--role-self);}
 #scrollArea::-webkit-scrollbar{width:4px;}
 #scrollArea::-webkit-scrollbar-thumb{background:var(--sub);border-radius:2px;}
@@ -1815,9 +1816,9 @@ function renderDifficultyModal(unlocked){
       <p class="start-desc" style="font-size:10.5px;margin-bottom:2px;">${info.desc}</p>
       <p class="start-desc ja" style="font-size:9.5px;margin-bottom:0;">${info.descJa}</p>
     </div>
-    <div class="diff-btn-row" style="margin-top:8px;">
-      <button class="settings-close" data-action="canceldiff" style="margin-top:0;">CANCEL</button>
-      <button class="start-btn small" style="margin-top:0;" data-action="startdiff">GAME START</button>
+    <div class="diff-btn-row" style="margin-top:8px;align-items:stretch;">
+      <button class="start-btn small" style="margin-top:0;flex:2;" data-action="startdiff">GAME START</button>
+      <button class="settings-close" data-action="canceldiff" style="margin-top:0;flex:1;">CANCEL</button>
     </div>
   </div></div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
