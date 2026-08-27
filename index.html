@@ -61,6 +61,11 @@ html,body{
 
 /* settings modal */
 .settings-modal{background:var(--bg);border:1.5px solid var(--purple);border-radius:14px;padding:16px;max-width:300px;width:100%;}
+.settings-modal.howto-modal{max-width:340px;max-height:78vh;display:flex;flex-direction:column;}
+.howto-body{overflow-y:auto;text-align:left;padding-right:2px;}
+.howto-sec{margin-bottom:12px;}
+.howto-sec b{font-size:10px;color:var(--blue);letter-spacing:0.5px;}
+.howto-sec p{font-size:10.5px;color:var(--ink);line-height:1.6;margin:3px 0 0;}
 .settings-modal h3{margin:0 0 14px;font-size:14px;color:var(--purple);}
 .settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:12px;color:var(--ink);}
 .sound-toggle{padding:6px 14px;border-radius:8px;border:2px solid var(--purple);color:var(--purple);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
@@ -329,6 +334,7 @@ document.addEventListener('pointerdown', function(e){
   else if(action==='selectdiff'){ uiSelectDifficulty(btn.dataset.diff); }
   else if(action==='canceldiff'){ sfxClick(); uiCloseDifficultyModal(); }
   else if(action==='startdiff'){ uiConfirmDifficultyStart(); }
+  else if(action==='howto'){ uiOpenHowTo(); }
 }, {passive:false});
 
 // ---------- 実音源（アップロードされたmp3）----------
@@ -531,25 +537,25 @@ const ITEMS = [
   // 防御系（永続）
   {id:10, name:'妨害耐性', desc:'受ける妨害の持続-15%（上限-75%）', price:30, rarity:'rare', type:'debuffResist'},
   {id:11, name:'経済耐性', desc:'受ける割高効果-20%（上限-80%）', price:9, rarity:'common', type:'econResist'},
-  {id:12, name:'盗難耐性', desc:'コイン強奪オーラを完全無効化', price:28, rarity:'rare', type:'immuneStealPerm'},
-  {id:13, name:'目視回避', desc:'フェイクオーラを完全無効化', price:6, rarity:'common', type:'immuneFakePerm'},
+  {id:12, name:'盗難耐性', desc:'コイン強奪トラップを完全無効化', price:28, rarity:'rare', type:'immuneStealPerm'},
+  {id:13, name:'目視回避', desc:'フェイクトラップを完全無効化', price:6, rarity:'common', type:'immuneFakePerm'},
   // 情報系（永続）
   {id:14, name:'望遠鏡', desc:'常に相手の所持コインが見える', price:5, rarity:'common', type:'seeCoinsPerm'},
   {id:15, name:'予兆センサー', desc:'常に次回入荷までの秒数が見える', price:5, rarity:'common', type:'seeRestockPerm'},
   {id:16, name:'監視カメラ', desc:'自分を最後に攻撃した相手が常に見える', price:20, rarity:'rare', type:'revealAttackerPerm'},
   {id:17, name:'先行入荷通知', desc:'次回入荷するアイテムを事前に確認できる', price:6, rarity:'common', type:'previewPerm'},
   {id:18, name:'チェイン延長', desc:'CHAIN持続+1秒（上限+8秒）', price:26, rarity:'rare', type:'chainBonus'},
-  // 妨害オーラ系（永続・ロールのたびに確率で自動発動）
-  {id:19, name:'目潰しオーラ', desc:'確率で相手の最大出目を下げる', price:55, rarity:'epic', type:'auraMaxDown'},
-  {id:20, name:'ゲージ凍結オーラ', desc:'確率で相手のロールを止める', price:60, rarity:'epic', type:'auraFreeze'},
-  {id:21, name:'割高オーラ', desc:'確率で相手の価格を上げる', price:50, rarity:'epic', type:'auraPriceUp'},
-  {id:22, name:'棚荒らしオーラ', desc:'確率で棚を1枠ロックする', price:48, rarity:'epic', type:'auraShelfLock'},
-  {id:23, name:'コイン強奪オーラ', desc:'確率で相手のコインを少し奪う', price:52, rarity:'epic', type:'auraCoinSteal'},
-  {id:24, name:'フェイクオーラ', desc:'確率で相手に偽の表示を出す', price:20, rarity:'rare', type:'auraFakeBubble'},
+  // 妨害トラップ系（永続・ロールのたびに確率で自動発動）
+  {id:19, name:'目潰しトラップ', desc:'確率で相手の最大出目を下げる', price:55, rarity:'epic', type:'auraMaxDown'},
+  {id:20, name:'ゲージ凍結トラップ', desc:'確率で相手のロールを止める', price:60, rarity:'epic', type:'auraFreeze'},
+  {id:21, name:'割高トラップ', desc:'確率で相手の価格を上げる', price:50, rarity:'epic', type:'auraPriceUp'},
+  {id:22, name:'棚荒らしトラップ', desc:'確率で棚を1枠ロックする', price:48, rarity:'epic', type:'auraShelfLock'},
+  {id:23, name:'コイン強奪トラップ', desc:'確率で相手のコインを少し奪う', price:52, rarity:'epic', type:'auraCoinSteal'},
+  {id:24, name:'フェイクトラップ', desc:'確率で相手に偽の表示を出す', price:20, rarity:'rare', type:'auraFakeBubble'},
   // 経済・情報の追加ラインナップ
   {id:25, name:'利息', desc:'10秒ごとに進捗の一部をコイン化', price:65, rarity:'epic', type:'interest'},
   {id:26, name:'保険', desc:'妨害を受けるとコインを得る', price:7, rarity:'common', type:'insurance'},
-  {id:28, name:'偵察スコープ', desc:'相手のオーラ確率が常に見える', price:18, rarity:'rare', type:'scoutPerm'},
+  {id:28, name:'偵察スコープ', desc:'相手のトラップ確率が常に見える', price:18, rarity:'rare', type:'scoutPerm'},
   // ハズレ（買うとコインだけ失う）※見た目は通常アイテムと同じレアリティに偽装
   {id:29, name:'ガラクタ', desc:'ただの石ころ。何も起きない', price:8, rarity:'common', type:'junk'},
   {id:30, name:'怪しい壺', desc:'効果なし。完全に損', price:30, rarity:'common', type:'junk'},
@@ -866,44 +872,46 @@ function triggerAuras(p){
   const now = Date.now();
   let fired = false;
   const pick = ()=> others[Math.floor(Math.random()*others.length)];
-  if(p.auraProc.maxDown && Math.random()<p.auraProc.maxDown){
+  // CPUのトラップは難易度に応じて発動確率が変化する（人間自身のトラップには影響しない）
+  const trapMult = p.isHuman ? 1 : ((DIFFICULTY_MULT[state.difficulty]||DIFFICULTY_MULT.normal).trapProc);
+  if(p.auraProc.maxDown && Math.random()<p.auraProc.maxDown*trapMult){
     const t = pick();
     t.effects.maxDownUntil = now + 8000*(1-(t.debuffResist||0));
     t.effects.maxDownAmount = 2; t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}の目潰しオーラが${t.name}を襲った！`, 'atk'); fired = true;
+    addLog(`${p.name}の目潰しトラップが${t.name}を襲った！`, 'atk'); fired = true;
   }
-  if(p.auraProc.freeze && Math.random()<p.auraProc.freeze){
+  if(p.auraProc.freeze && Math.random()<p.auraProc.freeze*trapMult){
     const t = pick();
     t.effects.rollDisabledUntil = now + 2000*(1-(t.debuffResist||0));
     t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}のゲージ凍結オーラが${t.name}を止めた！`, 'atk'); fired = true;
+    addLog(`${p.name}のゲージ凍結トラップが${t.name}を止めた！`, 'atk'); fired = true;
   }
-  if(p.auraProc.priceUp && Math.random()<p.auraProc.priceUp){
+  if(p.auraProc.priceUp && Math.random()<p.auraProc.priceUp*trapMult){
     const t = pick();
     t.effects.priceUpUntil = now + 10000*(1-(t.debuffResist||0));
     t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}の割高オーラが${t.name}を直撃！`, 'atk'); fired = true;
+    addLog(`${p.name}の割高トラップが${t.name}を直撃！`, 'atk'); fired = true;
   }
-  if(p.auraProc.shelfLock && Math.random()<p.auraProc.shelfLock){
+  if(p.auraProc.shelfLock && Math.random()<p.auraProc.shelfLock*trapMult){
     const candidates = [0,1,2].filter(i=>!state.shop.auctions[i]);
     if(candidates.length>0){
       const idx = candidates[Math.floor(Math.random()*candidates.length)];
       state.shop.lockedUntil[idx] = now + 8000;
-      addLog(`${p.name}の棚荒らしオーラが発動！`, 'atk'); fired = true;
+      addLog(`${p.name}の棚荒らしトラップが発動！`, 'atk'); fired = true;
     }
   }
-  if(p.auraProc.coinSteal && Math.random()<p.auraProc.coinSteal){
+  if(p.auraProc.coinSteal && Math.random()<p.auraProc.coinSteal*trapMult){
     const t = pick();
     if(t.effects.immuneStealPermanent){ /* 被弾側の防御は自分のアクションではないため無音 */ }
     else {
-      const amount = Math.max(1, Math.round(t.coins * 0.15 * (1-(t.debuffResist||0))));
+      const amount = Math.max(1, Math.round(t.coins * 0.18 * (1-(t.debuffResist||0))));
       t.coins = Math.max(0, t.coins - amount);
       p.coins += amount;
       t.lastAttackerBy = p.name;
-      addLog(`${p.name}のコイン強奪オーラが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true;
+      addLog(`${p.name}のコイン強奪トラップが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true;
     }
   }
-  if(p.auraProc.fakeBubble && Math.random()<p.auraProc.fakeBubble){
+  if(p.auraProc.fakeBubble && Math.random()<p.auraProc.fakeBubble*trapMult){
     const t = pick();
     if(t.effects.immuneFakePermanent){ /* 被弾側の防御は自分のアクションではないため無音 */ }
     else {
@@ -1140,12 +1148,12 @@ function applyEffect(p, item){
     case 'revealAttackerPerm': p.effects.revealAttackerPermanent = true; break;
     case 'previewPerm': p.effects.previewPermanent = true; break;
     case 'chainBonus': p.chainBonusSec = Math.min(8, (p.chainBonusSec||0) + 1); break;
-    case 'auraMaxDown': p.auraProc.maxDown = Math.min(0.42, (p.auraProc.maxDown||0) + 0.06); break;
-    case 'auraFreeze': p.auraProc.freeze = Math.min(0.35, (p.auraProc.freeze||0) + 0.05); break;
-    case 'auraPriceUp': p.auraProc.priceUp = Math.min(0.42, (p.auraProc.priceUp||0) + 0.06); break;
-    case 'auraShelfLock': p.auraProc.shelfLock = Math.min(0.35, (p.auraProc.shelfLock||0) + 0.05); break;
-    case 'auraCoinSteal': p.auraProc.coinSteal = Math.min(0.42, (p.auraProc.coinSteal||0) + 0.06); break;
-    case 'auraFakeBubble': p.auraProc.fakeBubble = Math.min(0.56, (p.auraProc.fakeBubble||0) + 0.08); break;
+    case 'auraMaxDown': p.auraProc.maxDown = Math.min(0.5, (p.auraProc.maxDown||0) + 0.08); break;
+    case 'auraFreeze': p.auraProc.freeze = Math.min(0.42, (p.auraProc.freeze||0) + 0.07); break;
+    case 'auraPriceUp': p.auraProc.priceUp = Math.min(0.5, (p.auraProc.priceUp||0) + 0.08); break;
+    case 'auraShelfLock': p.auraProc.shelfLock = Math.min(0.42, (p.auraProc.shelfLock||0) + 0.07); break;
+    case 'auraCoinSteal': p.auraProc.coinSteal = Math.min(0.5, (p.auraProc.coinSteal||0) + 0.08); break;
+    case 'auraFakeBubble': p.auraProc.fakeBubble = Math.min(0.65, (p.auraProc.fakeBubble||0) + 0.1); break;
     case 'interest': p.interestRate = Math.min(0.03, (p.interestRate||0) + 0.005); break;
     case 'insurance': p.insuranceBonus = (p.insuranceBonus||0) + 5; break;
     case 'scoutPerm': p.effects.scoutPermanent = true; break;
@@ -1240,9 +1248,9 @@ const PERSONALITY = {
 
 // ---------- CPUの強さ（EASY / NORMAL / HARD）----------
 const DIFFICULTY_MULT = {
-  easy:   { actRate:0.55, raiseBoldness:0.65 },
-  normal: { actRate:1.0,  raiseBoldness:1.0  },
-  hard:   { actRate:1.6,  raiseBoldness:1.4  },
+  easy:   { actRate:0.55, raiseBoldness:0.65, trapProc:0.85 },
+  normal: { actRate:1.0,  raiseBoldness:1.0,  trapProc:1.0  },
+  hard:   { actRate:1.6,  raiseBoldness:1.4,  trapProc:1.3  },
 };
 const DIFF_UNLOCK_KEY = 'game9999_difficulty_unlocked_v1';
 function loadDifficultyUnlocked(){
@@ -1389,7 +1397,7 @@ function renderScroll(){
       </div>
       <div class="opp-bar"><div class="opp-bar-fill" style="width:${Math.min(100,p.progress/GOAL*100)}%;background:${oc}"></div></div>
       <div class="opp-score mono">${fmt(p.progress)}${human.effects.seeCoinsPermanent?` ／ ${p.coins}C`:''}</div>
-      ${auraTotal>0 ? `<div class="opp-score mono">オーラ計${Math.round(auraTotal*100)}%</div>` : ''}
+      ${auraTotal>0 ? `<div class="opp-score mono">トラップ計${Math.round(auraTotal*100)}%</div>` : ''}
     </div>`;
   });
   html += `</div></div>`;
@@ -1625,9 +1633,9 @@ function renderBadges(p, now){
   if(p.insuranceBonus>0) b+=`<span class="badge buff">保険+${p.insuranceBonus}</span>`;
   if(p.effects.scoutPermanent) b+=`<span class="badge buff">偵察</span>`;
   if(p.auraProc){
-    if(p.auraProc.maxDown) b+=`<span class="badge debuff">目潰しオーラ${Math.round(p.auraProc.maxDown*100)}%</span>`;
-    if(p.auraProc.freeze) b+=`<span class="badge debuff">凍結オーラ${Math.round(p.auraProc.freeze*100)}%</span>`;
-    if(p.auraProc.priceUp) b+=`<span class="badge debuff">割高オーラ${Math.round(p.auraProc.priceUp*100)}%</span>`;
+    if(p.auraProc.maxDown) b+=`<span class="badge debuff">目潰しトラップ${Math.round(p.auraProc.maxDown*100)}%</span>`;
+    if(p.auraProc.freeze) b+=`<span class="badge debuff">凍結トラップ${Math.round(p.auraProc.freeze*100)}%</span>`;
+    if(p.auraProc.priceUp) b+=`<span class="badge debuff">割高トラップ${Math.round(p.auraProc.priceUp*100)}%</span>`;
     if(p.auraProc.shelfLock) b+=`<span class="badge debuff">棚荒らし${Math.round(p.auraProc.shelfLock*100)}%</span>`;
     if(p.auraProc.coinSteal) b+=`<span class="badge debuff">強奪${Math.round(p.auraProc.coinSteal*100)}%</span>`;
     if(p.auraProc.fakeBubble) b+=`<span class="badge debuff">フェイク${Math.round(p.auraProc.fakeBubble*100)}%</span>`;
@@ -1730,6 +1738,7 @@ function uiOpenSettings(){
         <button class="speed-btn ${speedSettings.multiplier===2?'active':''}" onclick="uiSetSpeed(2)">×2</button>
       </div>
     </div>
+    <button class="settings-close" data-action="howto" style="margin-top:10px;color:var(--blue);border-color:var(--blue);">HOW TO PLAY ／ 遊び方</button>
     <button class="settings-close" onclick="uiCloseSettings()">閉じる</button>
   </div></div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
@@ -1740,6 +1749,45 @@ function uiCloseSettings(){
   state.paused = false;
   renderScroll();
 }
+
+// ---------- 遊び方画面 ----------
+function uiOpenHowTo(){
+  sfxClick();
+  const html = `<div class="overlay" id="howtoOverlay"><div class="settings-modal howto-modal">
+    <h3>HOW TO PLAY ／ 遊び方</h3>
+    <div class="howto-body">
+      <div class="howto-sec"><b>GOAL ／ 目的</b><p>4人（あなた＋CPU3人）でサイコロを振り合い、合計出目を競う。最初に9999に到達したプレイヤーの勝ち。</p></div>
+      <div class="howto-sec"><b>SHOP ／ オークション制ショップ</b><p>棚のアイテムは「入札」で手に入れる。誰かが入札すると数秒のカウントダウンが始まり、その間に倍率を上げて競り合うと落札額が跳ね上がる。競らず放置すれば安く手に入るが、他人に奪われることもある。</p></div>
+      <div class="howto-sec"><b>ITEM TYPES ／ アイテムの種類</b><p>
+      ・加速系：追加ダイス、出目+◯、倍化の指輪など。出目そのものを底上げする<br>
+      ・防御系：妨害耐性、盗難耐性、目視回避など。妨害アイテムの効果を軽減・無効化する<br>
+      ・情報系：望遠鏡（相手のコインが見える）、予兆センサー、先行入荷通知（次の入荷とフィーバータイムの予告が見える）<br>
+      ・ハズレ：見た目は正規品と同じだが効果なし。よく読まずに連打すると引っかかる<br>
+      ・特殊ダイス：出目が固定パターンの追加ダイス。当たり外れがある<br>
+      ・コンボ専用の欠片：単体では無力だが、3種類すべて揃うと合計出目が実質10倍に。奪い合いになりやすい</p></div>
+      <div class="howto-sec"><b>TRAP ／ 妨害トラップ</b><p>自分がロールするたびに一定確率で自動発動し、相手を妨害する。<br>
+      ・出目ダウン：相手の最大出目を下げる<br>
+      ・凍結：相手のロールを一時的に止める<br>
+      ・割高：相手のショップ価格を上げる<br>
+      ・棚ロック：棚を1枠ロックする<br>
+      ・コイン強奪：相手のコインを奪う<br>
+      ・フェイク：偽の表示を出すだけ（実害なし）</p></div>
+      <div class="howto-sec"><b>COMBO ／ コンボ</b><p>ショップに寄らず振り続けると「COMBO」が積み上がり、出目に一時的な倍率がかかる。ただし入札・競り上げに参加するとその場でリセットされる。「振り続ける」か「買いに行く」かの駆け引き。</p></div>
+      <div class="howto-sec"><b>CHAIN ／ チェイン</b><p>
+      ・幸運チェイン：誰かが全体最高出目を更新すると発動。下位のプレイヤーほど強力で、1位がゴールに近いほど全体の効果も強まる<br>
+      ・値引きチェイン：誰かが購入すると発動し、しばらくショップが割引になる</p></div>
+      <div class="howto-sec"><b>CHECKPOINT ／ チェックポイント（旗）</b><p>1000刻みのラインに最初に到達すると「旗」を獲得。他の全員に10秒間のバフが付く。</p></div>
+      <div class="howto-sec"><b>FEVER TIME ／ フィーバータイム</b><p>2〜5分に一度、30秒間だけ発生するレアイベント。最大入札額を払えば、進行中の入札を無視して即座に確定購入できる。</p></div>
+    </div>
+    <button class="settings-close" onclick="uiCloseHowTo()">閉じる</button>
+  </div></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+function uiCloseHowTo(){
+  const el = document.getElementById('howtoOverlay');
+  if(el) el.remove();
+}
+
 function uiToggleSound(){
   soundSettings.on = !soundSettings.on;
   const btn = document.getElementById('soundToggleBtn');
@@ -1881,7 +1929,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v1.2</div>
+        <div class="version-tag">v1.4</div>
       </div>
     </div>
   `;
