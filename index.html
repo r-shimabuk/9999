@@ -54,7 +54,10 @@ html,body{
 }
 
 /* header */
-.title{display:flex;align-items:baseline;justify-content:space-between;flex:0 0 auto;padding:2px 2px 0;}
+.title{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;flex:0 0 auto;padding:2px 2px 0;column-gap:6px;}
+.title h1{justify-self:start;}
+.title .settings-btn{justify-self:end;}
+.bgm-track-name{justify-self:center;text-align:center;font-size:8px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;letter-spacing:0.5px;}
 .title h1{font-family:'Share Tech Mono',monospace;font-size:14px;letter-spacing:2px;margin:0;color:var(--blue);font-weight:900;}
 .title .reset{font-size:9px;color:var(--red);background:none;border:1.5px solid var(--red);border-radius:6px;padding:3px 8px;cursor:pointer;font-weight:700;}
 .title .settings-btn{color:var(--purple);border-color:var(--purple);}
@@ -402,16 +405,60 @@ function ensureAudio(){
 }
 const soundSettings = { on:true, volume:1.0 };
 
-// ---------- BGM（同じ場所に bgm.mp3 を置くと自動的に読み込まれる）----------
+// ---------- BGM（bgmフォルダに複数の曲を置くとランダムで流れる）----------
+// 曲を追加したいときは、bgmフォルダに音声ファイルを置いた上で、下の配列に
+// {file:'bgm/ファイル名.mp3', name:'表示したい曲名'} を追記してください。
+// フォルダの自動取得に失敗した場合のフォールバック用（普段はここを編集しなくてOK）
+let BGM_TRACKS = [
+  { file: 'bgm/track1.mp3', name: 'Track 1' },
+  { file: 'bgm/track2.mp3', name: 'Track 2' },
+  { file: 'bgm/track3.mp3', name: 'Track 3' },
+];
 const bgmSettings = { on:true, volume:0.2 };
+
+// ---------- bgmフォルダの中身をGitHub APIから自動取得 ----------
+// GitHub Pagesで公開している場合、bgmフォルダに音声ファイルを置くだけで
+// ファイル名から自動的に曲名を作って再生リストに追加する（コード編集不要）
+function prettifyTrackName(filename){
+  return filename.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ');
+}
+function detectGithubRepo(){
+  const host = location.hostname;
+  if(!host.endsWith('.github.io')) return null;
+  const owner = host.split('.')[0];
+  const parts = location.pathname.split('/').filter(Boolean);
+  const repo = parts.length>0 ? parts[0] : host; // プロジェクトページかユーザーページかで変わる
+  return {owner, repo};
+}
+async function loadBgmFolderList(){
+  const info = detectGithubRepo();
+  if(!info) return; // GitHub Pages以外（ローカル確認時など）は手動リストのまま
+  try{
+    const res = await fetch(`https://api.github.com/repos/${info.owner}/${info.repo}/contents/bgm`);
+    if(!res.ok) return; // bgmフォルダが無い・取得できない場合は手動リストのまま
+    const files = await res.json();
+    if(!Array.isArray(files)) return;
+    const audioExt = /\.(mp3|m4a|wav|ogg)$/i;
+    const tracks = files
+      .filter(f=>f.type==='file' && audioExt.test(f.name))
+      .map(f=>({file:'bgm/'+f.name, name:prettifyTrackName(f.name)}));
+    if(tracks.length>0){
+      BGM_TRACKS = tracks;
+      // すでに再生が始まっていた場合は、取得できたリストで鳴らし直す
+      if(bgmStarted) playRandomBgmTrack();
+    }
+  }catch(e){ /* 取得できなければ手動リストのまま */ }
+}
+loadBgmFolderList();
 
 // ---------- ゲーム速度（回転時間・AI行動間隔・オークション時間などに反映）----------
 const speedSettings = { multiplier: 1 };
 function spd(ms){ return ms / speedSettings.multiplier; }
-const BGM = new Audio('bgm.mp3');
-BGM.loop = true;
+
+const BGM = new Audio();
 let bgmStarted = false;
 let bgmGainNode = null;
+let currentBgmIndex = -1;
 // iOSはHTMLAudioElementの.volumeを無視する仕様のため、Web Audio APIのGainNodeで音量制御する
 function ensureBgmGain(){
   if(bgmGainNode || !audioCtx) return;
@@ -423,15 +470,35 @@ function ensureBgmGain(){
     bgmGainNode.connect(audioCtx.destination);
   }catch(e){}
 }
+function updateBgmTrackDisplay(name){
+  const el = document.getElementById('bgmTrackName');
+  if(el) el.textContent = name ? `♫ ${name} ♫` : '';
+}
+function playRandomBgmTrack(){
+  if(BGM_TRACKS.length===0) return;
+  let idx = Math.floor(Math.random()*BGM_TRACKS.length);
+  if(BGM_TRACKS.length>1 && idx===currentBgmIndex){ idx = (idx+1) % BGM_TRACKS.length; }
+  currentBgmIndex = idx;
+  const track = BGM_TRACKS[idx];
+  BGM.src = track.file;
+  updateBgmTrackDisplay(track.name);
+  if(bgmSettings.on) BGM.play().catch(()=>{}); // 該当ファイルが無い場合は静かに失敗する
+}
+BGM.addEventListener('ended', ()=>{ if(bgmSettings.on) playRandomBgmTrack(); });
 function startBgm(){
   ensureBgmGain();
   if(bgmStarted) return;
   bgmStarted = true;
-  BGM.play().catch(()=>{}); // bgm.mp3が無い場合は静かに失敗する
+  playRandomBgmTrack();
 }
 function updateBgmPlayback(){
-  if(bgmSettings.on){ if(bgmGainNode) bgmGainNode.gain.value = bgmSettings.volume; if(bgmStarted) BGM.play().catch(()=>{}); }
-  else { BGM.pause(); }
+  if(bgmSettings.on){
+    if(bgmGainNode) bgmGainNode.gain.value = bgmSettings.volume;
+    if(bgmStarted){ if(BGM.paused) BGM.play().catch(()=>{}); }
+  } else {
+    BGM.pause();
+    updateBgmTrackDisplay(null);
+  }
 }
 function beep(freq, dur, type, vol, delay){
   if(!audioCtx || !soundSettings.on) return;
@@ -1377,6 +1444,7 @@ function buildSkeleton(){
   app.innerHTML = `
     <div class="title">
       <h1>9999</h1>
+      <div class="bgm-track-name" id="bgmTrackName"></div>
       <button class="reset settings-btn" data-action="settings">SETTINGS</button>
     </div>
     <div id="middleWrap">
@@ -1850,7 +1918,10 @@ function uiToggleBgm(){
   const btn = document.getElementById('bgmToggleBtn');
   if(btn){ btn.textContent = bgmSettings.on?'ON':'OFF'; btn.className = 'sound-toggle '+(bgmSettings.on?'':'off'); }
   updateBgmPlayback();
-  if(bgmSettings.on) startBgm();
+  if(bgmSettings.on){
+    startBgm();
+    if(currentBgmIndex>=0 && BGM_TRACKS[currentBgmIndex]) updateBgmTrackDisplay(BGM_TRACKS[currentBgmIndex].name);
+  }
 }
 function uiSetBgmVolume(v){
   bgmSettings.volume = Math.max(0, Math.min(1, v/100));
@@ -1975,7 +2046,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v1.7</div>
+        <div class="version-tag">v1.9</div>
       </div>
     </div>
   `;
