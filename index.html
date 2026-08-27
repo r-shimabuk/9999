@@ -48,7 +48,7 @@ html,body{
   max-width:480px;margin:0 auto;
   display:grid;
   grid-template-rows:auto minmax(0,1fr) auto;
-  padding:3px 3px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding:3px 3px calc(22px + env(safe-area-inset-bottom, 0px));
   row-gap:2px;
   overflow:hidden;
 }
@@ -82,8 +82,7 @@ html,body{
 
 /* scroll area: 相手/チェイン/ショップ。中身が多いときはここだけ内側スクロール */
 #scrollArea{flex:0 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
-#invPanel{flex:2 1 0;min-height:20px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
-#bottomSpacer{flex:1 1 0;min-height:0;}
+#invPanel{flex:1 1 auto;min-height:20px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
 #invPanel h2{color:var(--role-self);}
 #scrollArea::-webkit-scrollbar{width:4px;}
 #scrollArea::-webkit-scrollbar-thumb{background:var(--sub);border-radius:2px;}
@@ -1332,7 +1331,6 @@ function buildSkeleton(){
         <div class="inventory-row" id="invRow"><span class="inv-empty">まだアイテムを持っていません</span></div>
         <div class="inv-tip" id="invTip"></div>
       </div>
-      <div id="bottomSpacer"></div>
     </div>
     <div id="selfPanel">
       <div class="self-row">
