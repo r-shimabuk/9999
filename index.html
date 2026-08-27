@@ -82,7 +82,8 @@ html,body{
 
 /* scroll area: 相手/チェイン/ショップ。中身が多いときはここだけ内側スクロール */
 #scrollArea{flex:0 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:2px;padding-bottom:0;}
-#invPanel{flex:1 1 auto;min-height:30px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
+#invPanel{flex:2 1 0;min-height:20px;overflow-y:auto;position:relative;border:1.5px solid var(--role-self);margin-bottom:4px;}
+#bottomSpacer{flex:1 1 0;min-height:0;}
 #invPanel h2{color:var(--role-self);}
 #scrollArea::-webkit-scrollbar{width:4px;}
 #scrollArea::-webkit-scrollbar-thumb{background:var(--sub);border-radius:2px;}
@@ -1331,6 +1332,7 @@ function buildSkeleton(){
         <div class="inventory-row" id="invRow"><span class="inv-empty">まだアイテムを持っていません</span></div>
         <div class="inv-tip" id="invTip"></div>
       </div>
+      <div id="bottomSpacer"></div>
     </div>
     <div id="selfPanel">
       <div class="self-row">
