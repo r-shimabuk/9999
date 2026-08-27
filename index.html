@@ -566,13 +566,16 @@ const NAMES = ['あなた','CPU-A','CPU-B','CPU-C'];
 const GOAL = 9999;
 const SHOP_RESTOCK_MS = 18000;
 const MULT_SEQ = [1, 1.5, 2, 3, 4, 5, 6, 8, 10]; // オークションの倍率ステップ（上限10倍）
-const AUCTION_MS = 3000;
+const AUCTION_MS = 5000;
 const CHAIN_MS_DEFAULT = 5000; // 値引きチェイン（購入時）はこれまで通り
 const CHAIN_LUCK_MS = 30000; // 幸運チェインは長めに
 const ROLL_ANIM_MS = 1100; // この回転時間そのものがクールタイムになる（初期は長め）
 
 function diceUpgradeCost(currentCount){
-  return 8 * Math.pow(4, currentCount-1); // 1個目:8 / 2個目:32 / 3個目:128 / 4個目:512 / 5個目:2048 ...
+  const cap = 8;
+  if(currentCount <= cap) return 8 * Math.pow(4, currentCount-1); // 1個目:8 / 2個目:32 / ... / 8個目:131072
+  const base = 8 * Math.pow(4, cap-1); // 131072
+  return base + (currentCount - cap) * 60000; // それ以降は線形増加（買えなくなるのを防ぐ）
 }
 
 function unlockedRarities(progress){
@@ -997,7 +1000,7 @@ function restockBatch(onlyEmpty){
 function bulkDiceCost(currentCount, n, premium){
   let sum = 0;
   for(let i=0;i<n;i++){ sum += diceUpgradeCost(currentCount+i); }
-  return Math.round(sum * premium);
+  return Math.min(999999, Math.round(sum * premium));
 }
 
 function priceFor(p, item){
