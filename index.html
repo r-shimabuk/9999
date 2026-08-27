@@ -261,8 +261,8 @@ html,body{
 
 .win-overlay{position:fixed;inset:0;background:rgba(27,42,74,0.92);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:60;text-align:center;padding:16px;padding-top:40px;overflow-y:auto;}
 .win-overlay h1{font-family:'Share Tech Mono',monospace;font-size:32px;color:var(--yellow);letter-spacing:2px;}
-.win-overlay button{margin-top:12px;margin-bottom:30px;padding:10px 22px;border-radius:10px;background:transparent;border:2px solid var(--yellow);color:var(--yellow);font-weight:900;cursor:pointer;flex-shrink:0;}
-.result-list{width:100%;max-width:340px;max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.win-overlay button{margin-top:16px;margin-bottom:40px;padding:10px 22px;border-radius:10px;background:transparent;border:2px solid var(--yellow);color:var(--yellow);font-weight:900;cursor:pointer;flex-shrink:0;}
+.result-list{width:100%;max-width:340px;display:flex;flex-direction:column;gap:6px;}
 .result-card{border:1.5px solid var(--sub);border-radius:10px;padding:8px;text-align:left;background:rgba(255,255,255,0.03);}
 .result-head{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px;}
 .result-stats{font-size:9px;color:var(--cream);opacity:0.85;margin-bottom:5px;}
@@ -403,7 +403,7 @@ function ensureAudio(){
 const soundSettings = { on:true, volume:1.0 };
 
 // ---------- BGM（同じ場所に bgm.mp3 を置くと自動的に読み込まれる）----------
-const bgmSettings = { on:true, volume:0.5 };
+const bgmSettings = { on:true, volume:0.2 };
 
 // ---------- ゲーム速度（回転時間・AI行動間隔・オークション時間などに反映）----------
 const speedSettings = { multiplier: 1 };
@@ -411,14 +411,26 @@ function spd(ms){ return ms / speedSettings.multiplier; }
 const BGM = new Audio('bgm.mp3');
 BGM.loop = true;
 let bgmStarted = false;
+let bgmGainNode = null;
+// iOSはHTMLAudioElementの.volumeを無視する仕様のため、Web Audio APIのGainNodeで音量制御する
+function ensureBgmGain(){
+  if(bgmGainNode || !audioCtx) return;
+  try{
+    const src = audioCtx.createMediaElementSource(BGM);
+    bgmGainNode = audioCtx.createGain();
+    bgmGainNode.gain.value = bgmSettings.volume;
+    src.connect(bgmGainNode);
+    bgmGainNode.connect(audioCtx.destination);
+  }catch(e){}
+}
 function startBgm(){
+  ensureBgmGain();
   if(bgmStarted) return;
   bgmStarted = true;
-  BGM.volume = bgmSettings.volume;
   BGM.play().catch(()=>{}); // bgm.mp3が無い場合は静かに失敗する
 }
 function updateBgmPlayback(){
-  if(bgmSettings.on){ BGM.volume = bgmSettings.volume; if(bgmStarted) BGM.play().catch(()=>{}); }
+  if(bgmSettings.on){ if(bgmGainNode) bgmGainNode.gain.value = bgmSettings.volume; if(bgmStarted) BGM.play().catch(()=>{}); }
   else { BGM.pause(); }
 }
 function beep(freq, dur, type, vol, delay){
@@ -1844,7 +1856,7 @@ function uiSetBgmVolume(v){
   bgmSettings.volume = Math.max(0, Math.min(1, v/100));
   const label = document.getElementById('bgmVolLabel');
   if(label) label.textContent = Math.round(bgmSettings.volume*100)+'%';
-  BGM.volume = bgmSettings.volume;
+  if(bgmGainNode) bgmGainNode.gain.value = bgmSettings.volume;
 }
 function uiSetSpeed(mult){
   speedSettings.multiplier = mult;
@@ -1963,7 +1975,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v1.5</div>
+        <div class="version-tag">v1.7</div>
       </div>
     </div>
   `;
