@@ -368,6 +368,8 @@ document.addEventListener('pointerdown', function(e){
   else if(action==='howto'){ uiOpenHowTo(); }
   else if(action==='backtomenu'){ uiBackToMenu(); }
   else if(action==='resetdata'){ uiResetData(); }
+  else if(action==='confirmcancel'){ uiConfirmCancel(); }
+  else if(action==='confirmok'){ uiConfirmOk(); }
   else if(action==='selectmode'){ uiSelectMode(btn.dataset.mode); }
   else if(action==='selectcount'){ uiSelectPlayerCount(parseInt(btn.dataset.count,10)); }
   else if(action==='togglecpu'){ uiToggleCpuSlot(parseInt(btn.dataset.slot,10)); }
@@ -1949,17 +1951,48 @@ function uiBackToMenu(){
   uiCloseSettings();
   uiReset();
 }
+// ---------- トンマナに合わせた汎用確認モーダル（ネイティブconfirmの代わり） ----------
+let __confirmCallback = null;
+function showConfirmModal(message, onConfirm){
+  const old = document.getElementById('confirmOverlay');
+  if(old) old.remove();
+  __confirmCallback = onConfirm;
+  const html = `<div class="overlay" id="confirmOverlay"><div class="settings-modal" style="border-color:var(--red);">
+    <h3 style="color:var(--red);">CONFIRM ／ 確認</h3>
+    <p class="start-desc ja" style="font-size:12px;line-height:1.7;margin:10px 0 16px;">${message}</p>
+    <div class="diff-btn-row" style="align-items:stretch;margin-top:4px;">
+      <button class="settings-close" data-action="confirmcancel" style="margin-top:0;flex:1;">CANCEL</button>
+      <button class="start-btn small" data-action="confirmok" style="margin-top:0;flex:1;border-color:var(--red);color:var(--red);">OK</button>
+    </div>
+  </div></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+function uiConfirmCancel(){
+  sfxClick();
+  __confirmCallback = null;
+  const el = document.getElementById('confirmOverlay');
+  if(el) el.remove();
+}
+function uiConfirmOk(){
+  sfxClick();
+  const el = document.getElementById('confirmOverlay');
+  if(el) el.remove();
+  const cb = __confirmCallback;
+  __confirmCallback = null;
+  if(cb) cb();
+}
+
 function uiResetData(){
   sfxClick();
-  const ok = confirm('保存されているデータ（難易度の解放状況・自動セーブなど）を全て削除します。よろしいですか？');
-  if(!ok) return;
-  try{
-    localStorage.removeItem(SAVE_KEY);
-    localStorage.removeItem(DIFF_UNLOCK_KEY);
-    localStorage.removeItem(ONBOARD_KEY);
-  }catch(e){}
-  uiCloseSettings();
-  uiReset();
+  showConfirmModal('保存されているデータ（難易度の解放状況・自動セーブなど）を全て削除します。よろしいですか？', ()=>{
+    try{
+      localStorage.removeItem(SAVE_KEY);
+      localStorage.removeItem(DIFF_UNLOCK_KEY);
+      localStorage.removeItem(ONBOARD_KEY);
+    }catch(e){}
+    uiCloseSettings();
+    uiReset();
+  });
 }
 
 // ---------- 遊び方画面 ----------
@@ -2290,7 +2323,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v4.2</div>
+        <div class="version-tag">v4.3</div>
       </div>
     </div>
   `;
