@@ -2173,11 +2173,11 @@ function markOnboarded(){
   try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){}
 }
 const TUTORIAL_STEPS = [
-  { selector:'#rollBtn', text:'ここを押すとサイコロを振るよ。出た数字が「進捗」として増えていく。' },
-  { selector:'.stat-row', text:'この数字がそのままお金。ショップで使うと、その分だけ減るよ（＝一時的なリスク投資）。' },
-  { selector:'.panel.role-shop', text:'気になるアイテムの「BID」を押すと入札スタート。他の人が競り上げてくることもある。' },
-  { selector:'#invPanel', text:'買ったアイテムはここに並ぶよ。タップすると効果を確認できる。' },
-  { selector:'.settings-btn', text:'音量やゲームの速さは、ここからいつでも変更できるよ。' },
+  { selector:'#rollBtn', text:'サイコロを振るボタン。出た数字が「進捗」として増えていく。' },
+  { selector:'.stat-row', text:'この数字がそのままお金。ショップで使うと、その分だけ減る（＝一時的なリスク投資）。' },
+  { selector:'.panel.role-shop', text:'気になるアイテムの「BID」を押すと入札を開始できる。他のプレイヤーが競り上げてくることもある。' },
+  { selector:'#invPanel', text:'買ったアイテムが並ぶ場所。タップすると効果を確認できる。' },
+  { selector:'.settings-btn', text:'音量やゲームの速さを変更するボタン。いつでも設定できる。' },
 ];
 let tutorialStepIdx = 0;
 function startButtonTutorial(){
@@ -2290,7 +2290,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v4.1</div>
+        <div class="version-tag">v4.2</div>
       </div>
     </div>
   `;
