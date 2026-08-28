@@ -157,7 +157,8 @@ html,body{
 .fever-banner-card{background:var(--bg);border:2.5px solid var(--orange);border-radius:16px;padding:12px 26px;text-align:center;box-shadow:0 0 0 5px rgba(255,122,0,0.12), 0 10px 26px rgba(27,42,74,0.18);}
 .fever-banner-title{font-family:'Share Tech Mono',monospace;font-size:19px;font-weight:900;letter-spacing:3px;color:var(--orange);white-space:nowrap;}
 .fever-banner-title .fever-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);margin:0 6px;vertical-align:middle;}
-.fever-banner-sub{font-size:10.5px;font-weight:700;margin-top:5px;letter-spacing:0.3px;color:var(--ink);}
+.fever-banner-sub{font-size:11px;font-weight:900;margin-top:6px;letter-spacing:0.3px;color:var(--ink);font-style:italic;}
+.fever-banner-sub2{font-size:9px;font-weight:700;margin-top:3px;letter-spacing:0.2px;color:var(--sub);}
 @keyframes feverBannerPop{
   0%{opacity:0;transform:translate(-50%,-70%) scale(0.9);}
   12%{opacity:1;transform:translate(-50%,-50%) scale(1.02);}
@@ -591,7 +592,8 @@ function showFeverBanner(){
   el.className = 'fever-banner';
   el.innerHTML = `<div class="fever-banner-card">
     <div class="fever-banner-title"><span class="fever-dot"></span>FEVER TIME<span class="fever-dot"></span></div>
-    <div class="fever-banner-sub">お金があれば何でも買える！</div>
+    <div class="fever-banner-sub">Everything&#39;s for sale.</div>
+    <div class="fever-banner-sub2">10倍の値段で即決オークション開始</div>
   </div>`;
   document.body.appendChild(el);
   setTimeout(()=>{ el.remove(); }, 2600);
@@ -2091,7 +2093,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowDifficultyModal()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v3.1</div>
+        <div class="version-tag">v3.2</div>
       </div>
     </div>
   `;
