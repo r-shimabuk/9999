@@ -84,6 +84,16 @@ html,body{
 .diff-btn.locked{opacity:0.45;cursor:not-allowed;}
 .diff-desc-box{border:1.5px solid var(--sub);border-radius:9px;padding:8px 10px;text-align:left;}
 .unlock-msg{color:var(--orange);font-weight:900;font-size:11px;letter-spacing:0.5px;margin-bottom:10px;}
+.tutorial-overlay{position:fixed;inset:0;z-index:90;pointer-events:none;}
+.tutorial-highlight{position:absolute;border-radius:10px;border:2.5px solid var(--orange);box-shadow:0 0 0 2000px rgba(27,42,74,0.55), 0 0 14px rgba(255,122,0,0.7);animation:tutorialPulse 1s ease-in-out infinite alternate;pointer-events:none;}
+@keyframes tutorialPulse{0%{box-shadow:0 0 0 2000px rgba(27,42,74,0.55), 0 0 6px rgba(255,122,0,0.5);}100%{box-shadow:0 0 0 2000px rgba(27,42,74,0.55), 0 0 18px rgba(255,122,0,0.9);}}
+.tutorial-bubble{position:absolute;background:var(--bg);border:2px solid var(--orange);border-radius:14px;padding:12px 14px;max-width:260px;box-shadow:0 6px 18px rgba(27,42,74,0.3);pointer-events:auto;--arrow-left:24px;}
+.tutorial-bubble::before{content:'';position:absolute;left:var(--arrow-left);width:14px;height:14px;background:var(--bg);border:2px solid var(--orange);transform:translateX(-50%) rotate(45deg);}
+.tutorial-bubble.arrow-top::before{top:-8px;border-right:none;border-bottom:none;}
+.tutorial-bubble.arrow-bottom::before{bottom:-8px;border-left:none;border-top:none;}
+.tutorial-step-num{font-size:9px;color:var(--orange);letter-spacing:1px;font-weight:900;margin-bottom:4px;}
+.tutorial-text{font-size:12px;color:var(--ink);line-height:1.6;margin-bottom:10px;}
+.tutorial-next-btn{width:100%;padding:8px;border-radius:9px;border:2px solid var(--orange);background:transparent;color:var(--orange);font-weight:900;font-size:11px;cursor:pointer;}
 .sound-toggle.off{border-color:var(--sub);color:var(--sub);}
 .settings-modal input[type=range]{width:100%;accent-color:var(--purple);}
 .settings-close{width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--sub);background:transparent;color:var(--sub);font-weight:700;cursor:pointer;font-size:12px;margin-top:4px;}
@@ -154,10 +164,8 @@ html,body{
 
 /* フィーバータイム演出：ゲーム全体のアウトライン基調デザインに合わせたバナー */
 .fever-banner{position:fixed;top:16%;left:50%;transform:translate(-50%,-50%);z-index:80;pointer-events:none;animation:feverBannerPop 2.6s cubic-bezier(.22,.9,.3,1) forwards;}
-.fever-banner-card{background:var(--bg);border:2.5px solid var(--orange);border-radius:16px;padding:12px 26px;text-align:center;box-shadow:0 0 0 5px rgba(255,122,0,0.12), 0 10px 26px rgba(27,42,74,0.18);}
-.fever-banner-title{font-family:'Share Tech Mono',monospace;font-size:19px;font-weight:900;letter-spacing:3px;color:var(--orange);white-space:nowrap;}
-.fever-banner-title .fever-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--orange);margin:0 6px;vertical-align:middle;}
-.fever-banner-sub{font-size:11px;font-weight:900;margin-top:6px;letter-spacing:0.3px;color:var(--ink);font-style:italic;}
+.fever-banner-card{background:var(--bg);border:2.5px solid var(--orange);border-radius:16px;padding:12px 20px;text-align:center;box-shadow:0 0 0 5px rgba(255,122,0,0.12), 0 10px 26px rgba(27,42,74,0.18);max-width:92vw;overflow:hidden;}
+.fever-row{font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:900;letter-spacing:1px;white-space:nowrap;line-height:1.5;overflow:hidden;}
 .fever-banner-sub2{font-size:9px;font-weight:700;margin-top:3px;letter-spacing:0.2px;color:var(--sub);}
 @keyframes feverBannerPop{
   0%{opacity:0;transform:translate(-50%,-70%) scale(0.9);}
@@ -358,9 +366,12 @@ document.addEventListener('pointerdown', function(e){
   else if(action==='canceldiff'){ sfxClick(); uiCloseDifficultyModal(); }
   else if(action==='startdiff'){ uiConfirmDifficultyStart(); }
   else if(action==='howto'){ uiOpenHowTo(); }
+  else if(action==='backtomenu'){ uiBackToMenu(); }
+  else if(action==='resetdata'){ uiResetData(); }
   else if(action==='selectmode'){ uiSelectMode(btn.dataset.mode); }
   else if(action==='selectcount'){ uiSelectPlayerCount(parseInt(btn.dataset.count,10)); }
   else if(action==='togglecpu'){ uiToggleCpuSlot(parseInt(btn.dataset.slot,10)); }
+  else if(action==='tutorialnext'){ uiTutorialNext(); }
 }, {passive:false});
 
 // ---------- 実音源（アップロードされたmp3）----------
@@ -587,6 +598,17 @@ function sfxMilestone(){ playClickSound(); }
 function sfxCheckpoint(){ playPetaSound(); }
 
 // フィーバータイム突入時の演出バナー（画面中央にオレンジの帯を重ねて表示）
+function feverRowsHtml(){
+  const word = 'FEVER TIME';
+  const total = 24; // 1行あたりのダッシュ換算の長さ
+  const positions = [5, 2, 7, 1, 9]; // 行ごとにFEVER TIMEを置く位置（ダッシュの数）
+  const colors = ['var(--red)','var(--blue)','var(--yellow)','var(--orange)','var(--purple)'];
+  return positions.map((pos, i)=>{
+    const before = 'ー'.repeat(pos);
+    const after = 'ー'.repeat(Math.max(2, total - pos - word.length));
+    return `<div class="fever-row" style="color:${colors[i % colors.length]}">${before}${word}${after}</div>`;
+  }).join('');
+}
 function showFeverBanner(){
   const old = document.getElementById('feverBanner');
   if(old) old.remove();
@@ -594,9 +616,8 @@ function showFeverBanner(){
   el.id = 'feverBanner';
   el.className = 'fever-banner';
   el.innerHTML = `<div class="fever-banner-card">
-    <div class="fever-banner-title"><span class="fever-dot"></span>FEVER TIME<span class="fever-dot"></span></div>
-    <div class="fever-banner-sub">Everything&#39;s for sale.</div>
-    <div class="fever-banner-sub2">10倍の値段で即決オークション開始</div>
+    ${feverRowsHtml()}
+    <div class="fever-banner-sub2" style="margin-top:8px;">Everything&#39;s for sale. ／ 最大値の7倍で即決オークション開始</div>
   </div>`;
   document.body.appendChild(el);
   setTimeout(()=>{ el.remove(); }, 2600);
@@ -1229,6 +1250,11 @@ function finalizePurchase(slotIdx, bidder, item, price, logSuffix){
     if(bidder.isHuman) sfxAuctionWin();
   }
   triggerChain('discount', bidder);
+  // フィーバータイム中は、売れたらすぐに棚を補充する
+  if(state.feverTime && state.feverTime.expiresAt > Date.now() && state.shop.lockedUntil[slotIdx] <= Date.now()){
+    const gameProgress = Math.max(...state.players.map(p=>p.progress), 0);
+    state.shop.slots[slotIdx] = { ...weightedItemPick(gameProgress) };
+  }
   renderScroll();
 }
 
@@ -1252,8 +1278,8 @@ function resolveAuctionSlot(slotIdx){
   finalizePurchase(slotIdx, bidder, item, price, '落札');
 }
 
-// フィーバータイム中：最大入札額（10倍）の2倍を払えば即座に確定購入できる
-const FEVER_MULT = MULT_SEQ[MULT_SEQ.length-1]; // 最大入札額（10倍）そのもの
+// フィーバータイム中：アイテムの最大値の7倍を払えば即座に確定購入できる
+const FEVER_MULT = 7; // アイテムの最大値の7倍で即決購入できる
 function feverBuyPrice(p, slotIdx){
   const item = state.shop.slots[slotIdx];
   if(!item) return null;
@@ -1361,7 +1387,7 @@ setInterval(()=>{
   // フィーバータイム：一定間隔で30秒だけ発生する「一気に確定購入できる」イベント
   if(!state.feverTime && now >= (state.nextFeverAt||0)){
     state.feverTime = { expiresAt: now + 30000 };
-    addLog('FEVER TIME！ 最大入札額（10倍）を払えば即座に確定購入できるぞ！', 'win');
+    addLog('FEVER TIME！ 最大値の7倍払えば即座に確定購入できるぞ！', 'win');
     showFeverBanner();
   } else if(state.feverTime && now >= state.feverTime.expiresAt){
     state.feverTime = null;
@@ -1906,6 +1932,8 @@ function uiOpenSettings(){
       </div>
     </div>
     <button class="settings-close" data-action="howto" style="margin-top:10px;color:var(--blue);border-color:var(--blue);">HOW TO PLAY ／ 遊び方</button>
+    <button class="settings-close" data-action="backtomenu" style="margin-top:8px;">MENU ／ スタートメニューに戻る</button>
+    <button class="settings-close" data-action="resetdata" style="margin-top:8px;color:var(--red);border-color:var(--red);">RESET DATA ／ データをリセット</button>
     <button class="settings-close" onclick="uiCloseSettings()">閉じる</button>
   </div></div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
@@ -1915,6 +1943,23 @@ function uiCloseSettings(){
   if(el) el.remove();
   state.paused = false;
   renderScroll();
+}
+function uiBackToMenu(){
+  sfxClick();
+  uiCloseSettings();
+  uiReset();
+}
+function uiResetData(){
+  sfxClick();
+  const ok = confirm('保存されているデータ（難易度の解放状況・自動セーブなど）を全て削除します。よろしいですか？');
+  if(!ok) return;
+  try{
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.removeItem(DIFF_UNLOCK_KEY);
+    localStorage.removeItem(ONBOARD_KEY);
+  }catch(e){}
+  uiCloseSettings();
+  uiReset();
 }
 
 // ---------- 遊び方画面 ----------
@@ -2113,7 +2158,96 @@ function uiConfirmDifficultyStart(){
   if(el) el.remove();
   state.difficulty = selectedDifficulty;
   uiStart();
+  if(!hasSeenOnboarding()){
+    // ゲーム画面が組み上がった直後に、実際のボタンを指し示すチュートリアルを開始
+    startButtonTutorial();
+  }
 }
+
+// ---------- 初回だけ出す「ボタンを指し示す」吹き出しチュートリアル ----------
+const ONBOARD_KEY = 'game9999_onboarded_v1';
+function hasSeenOnboarding(){
+  try{ return localStorage.getItem(ONBOARD_KEY) === '1'; }catch(e){ return false; }
+}
+function markOnboarded(){
+  try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){}
+}
+const TUTORIAL_STEPS = [
+  { selector:'#rollBtn', text:'ここを押すとサイコロを振るよ。出た数字が「進捗」として増えていく。' },
+  { selector:'.stat-row', text:'この数字がそのままお金。ショップで使うと、その分だけ減るよ（＝一時的なリスク投資）。' },
+  { selector:'.panel.role-shop', text:'気になるアイテムの「BID」を押すと入札スタート。他の人が競り上げてくることもある。' },
+  { selector:'#invPanel', text:'買ったアイテムはここに並ぶよ。タップすると効果を確認できる。' },
+  { selector:'.settings-btn', text:'音量やゲームの速さは、ここからいつでも変更できるよ。' },
+];
+let tutorialStepIdx = 0;
+function startButtonTutorial(){
+  tutorialStepIdx = 0;
+  state.paused = true;
+  renderTutorialStep();
+}
+function renderTutorialStep(){
+  const oldOv = document.getElementById('tutorialOverlay');
+  if(oldOv) oldOv.remove();
+  const step = TUTORIAL_STEPS[tutorialStepIdx];
+  const target = document.querySelector(step.selector);
+  if(!target){ advanceTutorial(); return; }
+  target.scrollIntoView({block:'center', behavior:'auto'});
+  const rect = target.getBoundingClientRect();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'tutorialOverlay';
+  overlay.className = 'tutorial-overlay';
+
+  const hl = document.createElement('div');
+  hl.className = 'tutorial-highlight';
+  hl.style.left = (rect.left-4)+'px';
+  hl.style.top = (rect.top-4)+'px';
+  hl.style.width = (rect.width+8)+'px';
+  hl.style.height = (rect.height+8)+'px';
+  overlay.appendChild(hl);
+
+  const isLast = tutorialStepIdx === TUTORIAL_STEPS.length-1;
+  const bubble = document.createElement('div');
+  bubble.className = 'tutorial-bubble';
+  bubble.innerHTML = `<div class="tutorial-step-num">${tutorialStepIdx+1} / ${TUTORIAL_STEPS.length}</div>
+    <div class="tutorial-text">${step.text}</div>
+    <button class="tutorial-next-btn" data-action="tutorialnext">${isLast?'OK ／ わかった':'NEXT ／ つぎへ'}</button>`;
+  overlay.appendChild(bubble);
+  document.body.appendChild(overlay);
+
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const goBelow = spaceBelow > 150;
+  requestAnimationFrame(()=>{
+    const bh = bubble.offsetHeight, bw = bubble.offsetWidth;
+    let top = goBelow ? rect.bottom+12 : rect.top-bh-12;
+    top = Math.max(8, Math.min(window.innerHeight-bh-8, top));
+    let left = rect.left + rect.width/2 - bw/2;
+    left = Math.max(8, Math.min(window.innerWidth-bw-8, left));
+    bubble.style.top = top+'px';
+    bubble.style.left = left+'px';
+    bubble.classList.add(goBelow?'arrow-top':'arrow-bottom');
+    let arrowLeft = rect.left + rect.width/2 - left;
+    arrowLeft = Math.max(16, Math.min(bw-16, arrowLeft));
+    bubble.style.setProperty('--arrow-left', arrowLeft+'px');
+  });
+}
+function advanceTutorial(){
+  tutorialStepIdx++;
+  if(tutorialStepIdx >= TUTORIAL_STEPS.length) finishTutorial();
+  else renderTutorialStep();
+}
+function finishTutorial(){
+  markOnboarded();
+  const el = document.getElementById('tutorialOverlay');
+  if(el) el.remove();
+  state.paused = false;
+  renderScroll();
+}
+function uiTutorialNext(){
+  sfxClick();
+  advanceTutorial();
+}
+
 function uiResume(){
   resetAllSfx();
   ensureAudio();
@@ -2150,13 +2284,13 @@ function renderStartScreen(){
       </div>
       <div class="start-bottom">
         <div class="start-sub">AUCTION DICE RACE</div>
-        <p class="start-desc">Roll dice with 3 rivals — first to reach 9999 wins. Buy items in the shop to accelerate or sabotage others.</p>
-        <p class="start-desc ja">4人でサイコロを振り合い、最初に9999に到達したプレイヤーの勝ち。ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
+        <p class="start-desc">Roll dice with 3 rivals — first to reach 9999 wins.<br>Buy items in the shop to accelerate<br>or sabotage others.</p>
+        <p class="start-desc ja">4人でサイコロを振り合い、<br>最初に9999に到達したプレイヤーの勝ち。<br>ショップでアイテムを買って加速したり、相手を妨害したりしよう。</p>
         <div class="start-btn-row">
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v3.6</div>
+        <div class="version-tag">v4.1</div>
       </div>
     </div>
   `;
