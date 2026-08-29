@@ -402,6 +402,11 @@ document.addEventListener('pointerdown', function(e){
   else if(action==='confirmcancel'){ uiConfirmCancel(); }
   else if(action==='confirmok'){ uiConfirmOk(); }
   else if(action==='invtip'){ showInvTip(btn, parseInt(btn.dataset.idx,10)); }
+  else if(action==='mpcreate'){ uiMpCreate(); }
+  else if(action==='mpjoin'){ uiMpJoin(); }
+  else if(action==='mpcancel'){ uiMpCancel(); }
+  else if(action==='mpstart'){ uiMpStart(); }
+  else if(action==='mpleave'){ uiMpLeave(); }
   else if(action==='selectmode'){ uiSelectMode(btn.dataset.mode); }
   else if(action==='selectcount'){ uiSelectPlayerCount(parseInt(btn.dataset.count,10)); }
   else if(action==='togglecpu'){ uiToggleCpuSlot(parseInt(btn.dataset.slot,10)); }
@@ -2151,6 +2156,148 @@ const DIFF_INFO = {
   hard:   { label:'HARD',   ja:'強い',  desc:'CPUs act fast and bid aggressively. A tough race.', descJa:'CPUの行動が速く、入札も積極的。かなり手強い対戦です。' },
 };
 let gameMode = 'single'; // 'single' または 'multi'
+
+// ---------- マルチプレイ通信（Cloudflare Worker中継サーバー経由）----------
+const WS_RELAY_BASE = 'wss://game9999-relay.ryuju111.workers.dev';
+let mpSocket = null;
+let mpIsHost = false;
+let mpMyId = null;
+let mpRoster = [];
+let mpRoomCode = null;
+let mpPlayerName = 'プレイヤー';
+
+function randomRoomCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字（0/O, 1/I等）を除外
+  let s = '';
+  for(let i=0;i<4;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+function uiShowMultiplayerConnect(){
+  const html = `<div class="overlay" id="mpConnectOverlay"><div class="settings-modal">
+    <h3>MULTIPLAYER ／ オンライン対戦</h3>
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px;">
+      <span>NAME ／ あなたの名前</span>
+      <input type="text" id="mpNameInput" maxlength="10" value="${mpPlayerName}" style="padding:8px;border-radius:8px;border:1.5px solid var(--sub);background:var(--bg);color:var(--ink);font-size:13px;">
+    </div>
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;">
+      <span>ROOM CODE ／ 参加する場合はルームコード</span>
+      <input type="text" id="mpCodeInput" maxlength="4" placeholder="例: ABCD" style="padding:8px;border-radius:8px;border:1.5px solid var(--sub);background:var(--bg);color:var(--ink);font-size:16px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-family:'Share Tech Mono',monospace;">
+    </div>
+    <div id="mpConnectError" style="color:var(--red);font-size:10px;margin-top:6px;min-height:14px;"></div>
+    <div class="diff-btn-row" style="margin-top:10px;align-items:stretch;">
+      <button class="start-btn small" style="margin-top:0;flex:1;" data-action="mpcreate">CREATE ／ 部屋を作る</button>
+      <button class="start-btn small" style="margin-top:0;flex:1;" data-action="mpjoin">JOIN ／ 参加する</button>
+    </div>
+    <button class="settings-close" data-action="mpcancel" style="margin-top:8px;">CANCEL</button>
+    <p class="start-desc ja" style="font-size:8.5px;color:var(--sub);margin-top:8px;">※ 部屋を作った人がホストとなり、進行を担当します。</p>
+  </div></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+function uiMpCancel(){
+  sfxClick();
+  const el = document.getElementById('mpConnectOverlay');
+  if(el) el.remove();
+}
+function readMpName(){
+  const nameInput = document.getElementById('mpNameInput');
+  mpPlayerName = ((nameInput && nameInput.value) || 'プレイヤー').trim().slice(0,10) || 'プレイヤー';
+}
+function uiMpCreate(){
+  sfxClick();
+  readMpName();
+  connectToRoom(randomRoomCode());
+}
+function uiMpJoin(){
+  sfxClick();
+  readMpName();
+  const codeInput = document.getElementById('mpCodeInput');
+  const code = ((codeInput && codeInput.value) || '').trim().toUpperCase();
+  if(code.length < 2){
+    const errEl = document.getElementById('mpConnectError');
+    if(errEl) errEl.textContent = 'ルームコードを入力してください。';
+    return;
+  }
+  connectToRoom(code);
+}
+function connectToRoom(code){
+  mpRoomCode = code;
+  try{
+    mpSocket = new WebSocket(`${WS_RELAY_BASE}/room/${code}`);
+  }catch(e){
+    const errEl = document.getElementById('mpConnectError');
+    if(errEl) errEl.textContent = '接続に失敗しました。通信環境を確認してください。';
+    return;
+  }
+  mpSocket.addEventListener('open', ()=>{
+    mpSocket.send(JSON.stringify({type:'join', name:mpPlayerName}));
+  });
+  mpSocket.addEventListener('message', (evt)=>{
+    let data;
+    try{ data = JSON.parse(evt.data); }catch(e){ return; }
+    handleMpMessage(data);
+  });
+  mpSocket.addEventListener('close', ()=>{
+    addLog('マルチプレイ接続が切れました。');
+  });
+  mpSocket.addEventListener('error', ()=>{
+    const errEl = document.getElementById('mpConnectError');
+    if(errEl) errEl.textContent = '接続エラーが発生しました。ルームコードを確認してください。';
+  });
+  const connEl = document.getElementById('mpConnectOverlay');
+  if(connEl) connEl.remove();
+  renderMpWaitingRoom();
+}
+function handleMpMessage(data){
+  if(data.type==='joined'){
+    mpMyId = data.id;
+    mpIsHost = data.isHost;
+    mpRoster = data.players;
+    renderMpWaitingRoom();
+  } else if(data.type==='roster'){
+    mpRoster = data.players;
+    renderMpWaitingRoom();
+  } else if(data.type==='left'){
+    renderMpWaitingRoom();
+  } else if(data.type==='action'){
+    if(data.payload && data.payload.kind==='start_game' && !mpIsHost){
+      const el = document.getElementById('mpWaitOverlay');
+      if(el) el.remove();
+      addLog('ホストがゲームを開始しました。（本格的な同期は今後対応予定です）');
+    }
+  }
+}
+function renderMpWaitingRoom(){
+  const old = document.getElementById('mpWaitOverlay');
+  if(old) old.remove();
+  const rosterHtml = mpRoster.map(p=>`<div class="settings-row" style="margin-bottom:4px;"><span>${escapeHtml(p.name)}${p.isHost?' 👑':''}${p.id===mpMyId?'（あなた）':''}</span></div>`).join('');
+  const html = `<div class="overlay" id="mpWaitOverlay"><div class="settings-modal">
+    <h3>ROOM ／ <span class="mono" style="letter-spacing:3px;">${mpRoomCode}</span></h3>
+    <p class="start-desc ja" style="font-size:10px;">このコードを他のプレイヤーに伝えてください。</p>
+    <div style="margin:10px 0;">${rosterHtml}</div>
+    ${mpIsHost
+      ? `<button class="start-btn small" style="margin-top:8px;" data-action="mpstart" ${mpRoster.length<2?'disabled':''}>GAME START（現在${mpRoster.length}人）</button>`
+      : `<p class="start-desc ja" style="font-size:11px;color:var(--sub);text-align:center;">ホストの開始を待っています...</p>`}
+    <button class="settings-close" data-action="mpleave" style="margin-top:8px;">LEAVE ／ 退出</button>
+  </div></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+function uiMpStart(){
+  if(!mpIsHost || !mpSocket) return;
+  sfxClick();
+  mpSocket.send(JSON.stringify({type:'action', payload:{kind:'start_game'}}));
+  const el = document.getElementById('mpWaitOverlay');
+  if(el) el.remove();
+  uiShowDifficultyModal();
+}
+function uiMpLeave(){
+  sfxClick();
+  if(mpSocket){ try{ mpSocket.close(); }catch(e){} mpSocket = null; }
+  mpRoster = []; mpIsHost = false; mpMyId = null; mpRoomCode = null;
+  const el = document.getElementById('mpWaitOverlay');
+  if(el) el.remove();
+}
+
 function uiShowModeSelect(){
   ensureAudio();
   playBidSound();
@@ -2171,7 +2318,8 @@ function uiCloseModeSelect(){
 function uiSelectMode(mode){
   gameMode = mode;
   uiCloseModeSelect();
-  uiShowDifficultyModal();
+  if(mode==='multi') uiShowMultiplayerConnect();
+  else uiShowDifficultyModal();
 }
 function uiShowDifficultyModal(){
   ensureAudio();
@@ -2407,7 +2555,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v5.5</div>
+        <div class="version-tag">v5.6</div>
       </div>
     </div>
   `;
