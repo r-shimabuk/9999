@@ -2266,7 +2266,7 @@ function uiShowMultiplayerConnect(){
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;">
       <span>ROOM CODE ／ 参加する場合はルームコード</span>
-      <input type="text" id="mpCodeInput" maxlength="4" placeholder="例: ABCD" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()" style="padding:8px;border-radius:8px;border:1.5px solid var(--sub);background:var(--bg);color:var(--ink);font-size:16px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-family:'Share Tech Mono',monospace;">
+      <input type="text" id="mpCodeInput" maxlength="4" placeholder="例: ABCD" style="padding:8px;border-radius:8px;border:1.5px solid var(--sub);background:var(--bg);color:var(--ink);font-size:16px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-family:'Share Tech Mono',monospace;">
     </div>
     <div id="mpConnectError" style="color:var(--red);font-size:10px;margin-top:6px;min-height:14px;"></div>
     <div class="diff-btn-row" style="margin-top:10px;align-items:stretch;">
@@ -2296,7 +2296,7 @@ function uiMpJoin(){
   sfxClick();
   readMpName();
   const codeInput = document.getElementById('mpCodeInput');
-  const code = ((codeInput && codeInput.value) || '').trim().toUpperCase();
+  const code = ((codeInput && codeInput.value) || '').replace(/[^a-zA-Z]/g,'').toUpperCase().slice(0,4);
   if(code.length < 2){
     const errEl = document.getElementById('mpConnectError');
     if(errEl) errEl.textContent = 'ルームコードを入力してください。';
@@ -2745,7 +2745,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v6.4</div>
+        <div class="version-tag">v6.5</div>
       </div>
     </div>
   `;
