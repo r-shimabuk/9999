@@ -79,6 +79,10 @@ html,body{
 .speed-btn{flex:1;padding:8px 4px;border-radius:8px;border:1.5px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:12px;cursor:pointer;}
 .speed-btn.active{border-color:var(--purple);color:var(--purple);}
 .diff-btn-row{display:flex;gap:6px;margin-bottom:12px;}
+.modal-tab-row{display:flex;gap:6px;margin-bottom:12px;border-bottom:1.5px solid var(--sub);padding-bottom:8px;}
+.modal-tab-btn{flex:1;padding:8px 4px;border-radius:8px;border:1.5px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:10.5px;cursor:pointer;}
+.modal-tab-btn.active{border-color:var(--purple);color:var(--purple);}
+.modal-tab-body{min-height:180px;}
 .diff-btn{flex:1;padding:10px 4px;border-radius:9px;border:1.5px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
 .diff-btn.active{border-color:var(--orange);color:var(--orange);}
 .diff-btn.locked{opacity:0.45;cursor:not-allowed;}
@@ -407,6 +411,7 @@ document.addEventListener('pointerdown', function(e){
   else if(action==='mpcancel'){ uiMpCancel(); }
   else if(action==='mpstart'){ uiMpStart(); }
   else if(action==='mpleave'){ uiMpLeave(); }
+  else if(action==='difftab'){ uiSwitchDiffTab(btn.dataset.tab); }
   else if(action==='selectmode'){ uiSelectMode(btn.dataset.mode); }
   else if(action==='selectcount'){ uiSelectPlayerCount(parseInt(btn.dataset.count,10)); }
   else if(action==='togglecpu'){ uiToggleCpuSlot(parseInt(btn.dataset.slot,10)); }
@@ -795,9 +800,10 @@ function weightedItemPick(progress){
 }
 
 // ---------- state ----------
-function newPlayer(id, name, isHuman, personality){
+function newPlayer(id, name, isHuman, personality, netId){
   return {
     id, name, isHuman, personality: personality||null,
+    netId: netId!=null?netId:null, // マルチプレイ：この枠を操作する接続先のID（自分の場合はnull＝ローカル操作）
     progress:0,
     diceCount:1, maxBonus:0, minBonus:0,
     effects:{},
@@ -884,10 +890,21 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 
 function initGame(){
   const personalities = ['aggressive','economist','gambler'];
-  state.players = [ newPlayer(0, NAMES[0], true) ];
-  for(let i=0;i<selectedPlayerCount-1;i++){
-    if(selectedCpuSlots[i]){
-      state.players.push(newPlayer(i+1, NAMES[i+1], false, personalities[i]));
+  if(mpMode === 'host'){
+    // 接続中の人間プレイヤーをそのまま反映（枠0は常にホスト自身）
+    state.players = mpRoster.map((p, i)=> newPlayer(i, p.name, i===0, null, p.id));
+    // 残りの枠は、選んだ人数までCPUで埋める
+    for(let i=mpRoster.length; i<selectedPlayerCount; i++){
+      if(selectedCpuSlots[i-1]){
+        state.players.push(newPlayer(i, NAMES[i]||`CPU-${i}`, false, personalities[(i-1)%personalities.length]));
+      }
+    }
+  } else {
+    state.players = [ newPlayer(0, NAMES[0], true) ];
+    for(let i=0;i<selectedPlayerCount-1;i++){
+      if(selectedCpuSlots[i]){
+        state.players.push(newPlayer(i+1, NAMES[i+1], false, personalities[i]));
+      }
     }
   }
   state.shop = {slots:[null,null,null], lockedUntil:[0,0,0], auctions:[null,null,null], nextRestock:Date.now()+spd(SHOP_RESTOCK_MS), nextQuickRestock:Date.now()+spd(QUICK_RESTOCK_MS), warned:false};
@@ -971,6 +988,10 @@ function rollOne(p){
 }
 
 function requestRoll(p){
+  if(mpMode==='guest'){
+    if(p.isHuman && mpSocket) { try{ mpSocket.send(JSON.stringify({type:'action', payload:{kind:'roll'}})); }catch(e){} }
+    return;
+  }
   if(state.winner || state.paused) return;
   if(p.isHuman && state.awaitingFirstRoll){
     state.awaitingFirstRoll = false; // 自分が振った瞬間に、CPUやタイマー類が動き出す
@@ -1143,6 +1164,7 @@ function triggerAuras(p){
 // fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
 setInterval(()=>{
   if(!state.running || state.winner || state.paused || state.awaitingFirstRoll) return;
+  if(mpMode==='guest'){ updateSelfLive(); updateOppLive(); return; } // ゲストはホストの状態を表示するだけ
   const now = Date.now();
   for(const p of state.players){
     if(p.rollAnim.active){
@@ -1243,6 +1265,10 @@ function priceFor(p, item){
 }
 
 function startAuction(p, slotIdx){
+  if(mpMode==='guest'){
+    if(p.isHuman && mpSocket) { try{ mpSocket.send(JSON.stringify({type:'action', payload:{kind:'bid', slot:slotIdx}})); }catch(e){} }
+    return;
+  }
   if(state.winner || state.paused) return;
   const item = state.shop.slots[slotIdx];
   if(!item || state.shop.lockedUntil[slotIdx] > Date.now() || state.shop.auctions[slotIdx]) return;
@@ -1258,6 +1284,10 @@ function startAuction(p, slotIdx){
 }
 
 function raiseAuction(p, slotIdx, targetTier){
+  if(mpMode==='guest'){
+    if(p.isHuman && mpSocket) { try{ mpSocket.send(JSON.stringify({type:'action', payload:{kind:'raise', slot:slotIdx, tier:targetTier}})); }catch(e){} }
+    return;
+  }
   if(state.winner || state.paused) return;
   const auc = state.shop.auctions[slotIdx];
   const item = state.shop.slots[slotIdx];
@@ -1329,6 +1359,10 @@ function feverBuyPrice(p, slotIdx){
   return Math.round(basePrice * FEVER_MULT);
 }
 function feverBuy(p, slotIdx){
+  if(mpMode==='guest'){
+    if(p.isHuman && mpSocket) { try{ mpSocket.send(JSON.stringify({type:'action', payload:{kind:'feverbuy', slot:slotIdx}})); }catch(e){} }
+    return;
+  }
   if(!state.feverTime || state.winner || state.paused) return;
   const item = state.shop.slots[slotIdx];
   if(!item) return;
@@ -1401,6 +1435,7 @@ function applyEffect(p, item){
 // ---------- game tick (shop timers / AI decisions) ----------
 setInterval(()=>{
   if(!state.running || state.winner || state.paused || state.awaitingFirstRoll) return;
+  if(mpMode==='guest') return; // ゲストはホストの状態を待つだけ（自分でタイマーを進めない）
   const now = Date.now();
   if(now >= (state.nextAutoSaveAt||0)){
     saveGame();
@@ -1443,7 +1478,7 @@ setInterval(()=>{
   if(state.chain.type && state.chain.expiresAt<=now){ state.chain.type=null; }
 
   for(const p of state.players){
-    if(p.isHuman) continue;
+    if(p.isHuman || p.netId!=null) continue; // 自分自身とリモート人間はAI操作しない
     p.aiTimer -= 200;
     if(p.aiTimer<=0){
       if(p.personality==='aggressive') p.aiTimer = spd(250 + Math.random()*350);
@@ -1453,6 +1488,7 @@ setInterval(()=>{
     }
   }
   renderScroll(); // cheap: never touches the self roll button
+  broadcastMpState(); // ホストなら、今の状態を接続中の全員に配信する
 }, 200);
 
 // アイテムの系統分類（個性ごとの好みに使う）
@@ -2164,6 +2200,9 @@ let mpIsHost = false;
 let mpMyId = null;
 let mpRoster = [];
 let mpRoomCode = null;
+let mpMode = null; // null(1人用) / 'host' / 'guest'
+let mpMyPlayerIndex = -1; // 共有ゲーム内での自分の枠番号（mpRosterの並び順に対応）
+let mpLastBroadcast = 0;
 let mpPlayerName = 'プレイヤー';
 
 function randomRoomCode(){
@@ -2253,18 +2292,25 @@ function handleMpMessage(data){
     mpMyId = data.id;
     mpIsHost = data.isHost;
     mpRoster = data.players;
-    renderMpWaitingRoom();
+    if(!mpMode) renderMpWaitingRoom();
   } else if(data.type==='roster'){
     mpRoster = data.players;
-    renderMpWaitingRoom();
+    if(!mpMode) renderMpWaitingRoom(); // ゲーム開始後はロビー画面はもう出さない
   } else if(data.type==='left'){
-    renderMpWaitingRoom();
+    if(!mpMode) renderMpWaitingRoom();
   } else if(data.type==='action'){
-    if(data.payload && data.payload.kind==='start_game' && !mpIsHost){
+    if(mpMode==='host'){
+      handleHostAction(data.from, data.payload);
+    } else if(data.payload && data.payload.kind==='start_game' && mpMode!=='host'){
       const el = document.getElementById('mpWaitOverlay');
       if(el) el.remove();
-      addLog('ホストがゲームを開始しました。（本格的な同期は今後対応予定です）');
+      mpMode = 'guest';
+      const roster = data.payload.roster || mpRoster;
+      mpMyPlayerIndex = roster.findIndex(r=>r.id===mpMyId);
+      if(mpMyPlayerIndex < 0) mpMyPlayerIndex = 0;
     }
+  } else if(data.type==='state'){
+    applyMpState(data.payload);
   }
 }
 function renderMpWaitingRoom(){
@@ -2285,7 +2331,9 @@ function renderMpWaitingRoom(){
 function uiMpStart(){
   if(!mpIsHost || !mpSocket) return;
   sfxClick();
-  mpSocket.send(JSON.stringify({type:'action', payload:{kind:'start_game'}}));
+  mpMode = 'host';
+  mpMyPlayerIndex = 0; // ホストは常にロースターの先頭
+  mpSocket.send(JSON.stringify({type:'action', payload:{kind:'start_game', roster: mpRoster}}));
   const el = document.getElementById('mpWaitOverlay');
   if(el) el.remove();
   uiShowDifficultyModal();
@@ -2293,9 +2341,76 @@ function uiMpStart(){
 function uiMpLeave(){
   sfxClick();
   if(mpSocket){ try{ mpSocket.close(); }catch(e){} mpSocket = null; }
-  mpRoster = []; mpIsHost = false; mpMyId = null; mpRoomCode = null;
+  mpRoster = []; mpIsHost = false; mpMyId = null; mpRoomCode = null; mpMode = null; mpMyPlayerIndex = -1;
   const el = document.getElementById('mpWaitOverlay');
   if(el) el.remove();
+}
+
+// ---------- ホスト → 全員：今の状態を配信 ----------
+function broadcastMpState(){
+  if(mpMode!=='host' || !mpSocket || mpSocket.readyState!==1) return;
+  const now = Date.now();
+  if(now - mpLastBroadcast < 150) return;
+  mpLastBroadcast = now;
+  const payload = {
+    players: state.players.map(p=>({
+      id:p.id, name:p.name, netId:p.netId, personality:p.personality,
+      progress:p.progress, diceCount:p.diceCount, multiplierFactor:p.multiplierFactor,
+      flatRollBonus:p.flatRollBonus, comboCount:p.comboCount, flags:p.flags,
+      rollAnim:p.rollAnim, busyUntil:p.busyUntil, effects:p.effects,
+      bubble:p.bubble, bubbleUntil:p.bubbleUntil,
+      lastRollTotal:p.lastRollTotal, spinReduction:p.spinReduction,
+    })),
+    shop: state.shop, chain: state.chain, feverTime: state.feverTime, nextFeverAt: state.nextFeverAt,
+    checkpointBuff: state.checkpointBuff, difficulty: state.difficulty,
+    winner: state.winner ? state.winner.id : null,
+  };
+  try{ mpSocket.send(JSON.stringify({type:'state', payload})); }catch(e){}
+}
+
+// ---------- ホスト：ゲストから届いた操作を実行 ----------
+function handleHostAction(fromId, payload){
+  if(!payload) return;
+  const p = state.players.find(pl=>pl.netId===fromId);
+  if(!p) return;
+  if(payload.kind==='roll') requestRoll(p);
+  else if(payload.kind==='bid') startAuction(p, payload.slot);
+  else if(payload.kind==='raise') raiseAuction(p, payload.slot, payload.tier);
+  else if(payload.kind==='feverbuy') feverBuy(p, payload.slot);
+}
+
+// ---------- ゲスト：ホストから届いた状態を反映 ----------
+let mpGuestSkeletonBuilt = false;
+function applyMpState(payload){
+  if(mpMode!=='guest') return;
+  const selfEntry = payload.players[mpMyPlayerIndex];
+  if(!selfEntry) return;
+  const others = payload.players.filter((_,i)=>i!==mpMyPlayerIndex);
+  const reordered = [selfEntry, ...others];
+  state.players = reordered.map((p,i)=>{
+    const np = newPlayer(p.id, p.name, i===0, p.personality, p.netId);
+    Object.assign(np, p, {isHuman:i===0});
+    return np;
+  });
+  state.shop = payload.shop;
+  state.chain = payload.chain;
+  state.feverTime = payload.feverTime;
+  state.nextFeverAt = payload.nextFeverAt;
+  state.checkpointBuff = payload.checkpointBuff;
+  state.difficulty = payload.difficulty;
+  state.running = true;
+  state.paused = false;
+  state.awaitingFirstRoll = false;
+  if(!mpGuestSkeletonBuilt){
+    mpGuestSkeletonBuilt = true;
+    buildSkeleton();
+  }
+  if(payload.winner!=null && !state.winner){
+    const winP = state.players.find(p=>p.id===payload.winner);
+    if(winP){ state.winner = winP; renderWin(); }
+  }
+  renderScroll();
+  updateSelfLive();
 }
 
 function uiShowModeSelect(){
@@ -2324,11 +2439,14 @@ function uiSelectMode(mode){
 function uiShowDifficultyModal(){
   ensureAudio();
   playBidSound();
+  diffModalTab = 'difficulty';
   const unlocked = loadDifficultyUnlocked();
   selectedDifficulty = ['easy','normal','hard'].find(d=>unlocked[d]) || 'easy';
   if(gameMode==='single'){ selectedPlayerCount = 4; selectedCpuSlots = [true,true,true]; }
+  else if(gameMode==='multi' && mpMode==='host'){ selectedPlayerCount = Math.max(selectedPlayerCount, mpRoster.length); }
   renderDifficultyModal(unlocked);
 }
+let diffModalTab = 'difficulty'; // 'difficulty' または 'players'（マルチプレイ時のみ使用）
 function renderDifficultyModal(unlocked){
   const old = document.getElementById('difficultyOverlay');
   if(old) old.remove();
@@ -2339,7 +2457,16 @@ function renderDifficultyModal(unlocked){
     const isSel = selectedDifficulty===d;
     btns += `<button class="diff-btn ${isSel?'active':''} ${locked?'locked':''}" ${locked?'disabled':`data-action="selectdiff" data-diff="${d}"`}>${DIFF_INFO[d].label}${locked?' 🔒':''}</button>`;
   });
-  let multiSection = '';
+  const difficultyTabHtml = `
+    <p class="start-desc" style="font-size:11px;margin-bottom:2px;">Choose a difficulty. Beat it to unlock the next one.</p>
+    <p class="start-desc ja" style="font-size:10px;margin-bottom:14px;">強さを選んでください。クリアすると次の強さが解放されます。</p>
+    <div class="diff-btn-row">${btns}</div>
+    <div class="diff-desc-box">
+      <p class="start-desc" style="font-size:10.5px;margin-bottom:2px;">${info.desc}</p>
+      <p class="start-desc ja" style="font-size:9.5px;margin-bottom:0;">${info.descJa}</p>
+    </div>`;
+
+  let playersTabHtml = '';
   if(gameMode==='multi'){
     let countBtns = '';
     [2,3,4].forEach(n=>{
@@ -2353,30 +2480,40 @@ function renderDifficultyModal(unlocked){
         <button class="sound-toggle ${on?'':'off'}" data-action="togglecpu" data-slot="${i}">${on?'CPU ON':'空席'}</button>
       </div>`;
     }
-    multiSection = `
-    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:14px;">
+    playersTabHtml = `
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px;">
       <span>PLAYERS ／ 参加人数（あなたを含む）</span>
       <div class="diff-btn-row" style="margin-bottom:0;">${countBtns}</div>
     </div>
     <div style="margin-top:10px;">${slotRows}</div>
     <p class="start-desc ja" style="font-size:8.5px;color:var(--sub);margin:2px 0 0;">※ オンライン対戦は準備中です。今は「空席」にした枠はゲームに参加しません。</p>`;
   }
+
+  const tabBarHtml = gameMode==='multi' ? `
+    <div class="modal-tab-row">
+      <button class="modal-tab-btn ${diffModalTab==='difficulty'?'active':''}" data-action="difftab" data-tab="difficulty">DIFFICULTY ／ 強さ</button>
+      <button class="modal-tab-btn ${diffModalTab==='players'?'active':''}" data-action="difftab" data-tab="players">PLAYERS ／ 人数</button>
+    </div>` : '';
+
+  const bodyHtml = gameMode==='multi'
+    ? (diffModalTab==='players' ? playersTabHtml : difficultyTabHtml)
+    : difficultyTabHtml;
+
   const html = `<div class="overlay" id="difficultyOverlay"><div class="settings-modal">
     <h3>${gameMode==='multi'?'MULTIPLAYER LOBBY ／ マルチプレイ設定':'DIFFICULTY ／ 強さを選ぼう'}</h3>
-    <p class="start-desc" style="font-size:11px;margin-bottom:2px;">Choose a difficulty. Beat it to unlock the next one.</p>
-    <p class="start-desc ja" style="font-size:10px;margin-bottom:14px;">強さを選んでください。クリアすると次の強さが解放されます。</p>
-    <div class="diff-btn-row">${btns}</div>
-    <div class="diff-desc-box">
-      <p class="start-desc" style="font-size:10.5px;margin-bottom:2px;">${info.desc}</p>
-      <p class="start-desc ja" style="font-size:9.5px;margin-bottom:0;">${info.descJa}</p>
-    </div>
-    ${multiSection}
+    ${tabBarHtml}
+    <div class="modal-tab-body">${bodyHtml}</div>
     <div class="diff-btn-row" style="margin-top:12px;align-items:stretch;">
       <button class="start-btn small" style="margin-top:0;flex:2;" data-action="startdiff">GAME START</button>
       <button class="settings-close" data-action="canceldiff" style="margin-top:0;flex:1;">CANCEL</button>
     </div>
   </div></div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
+function uiSwitchDiffTab(tab){
+  sfxClick();
+  diffModalTab = tab;
+  renderDifficultyModal(loadDifficultyUnlocked());
 }
 function uiSelectPlayerCount(n){
   selectedPlayerCount = n;
@@ -2555,7 +2692,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v5.6</div>
+        <div class="version-tag">v6.0</div>
       </div>
     </div>
   `;
