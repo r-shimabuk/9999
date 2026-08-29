@@ -386,6 +386,9 @@ document.addEventListener('touchmove', function(e){
 //   タグ自体を一度削除して作り直す、より強い方式も併用する
 const VIEWPORT_CONTENT = 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
 function forceResetZoom(){
+  // input/textareaに入力中は触らない（モバイルの予測変換と衝突し、文字が重複する不具合の原因になるため）
+  const ae = document.activeElement;
+  if(ae && (ae.tagName==='INPUT' || ae.tagName==='TEXTAREA')) return;
   const old = document.querySelector('meta[name="viewport"]');
   if(old) old.remove();
   const fresh = document.createElement('meta');
@@ -2745,7 +2748,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v6.5</div>
+        <div class="version-tag">v6.6</div>
       </div>
     </div>
   `;
