@@ -75,25 +75,30 @@ html,body{
 .howto-sec p{font-size:10.5px;color:var(--ink);line-height:1.6;margin:3px 0 0;}
 .settings-modal h3{margin:0 0 14px;font-size:14px;color:var(--purple);}
 .settings-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;font-size:12px;color:var(--ink);}
-.sound-toggle{padding:6px 14px;border-radius:8px;border:2px solid var(--purple);color:var(--purple);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
-.speed-btn{flex:1;padding:8px 4px;border-radius:8px;border:2px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:12px;cursor:pointer;}
+.sound-toggle{padding:6px 14px;border-radius:8px;border:1.5px solid var(--purple);color:var(--purple);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
+.speed-btn{flex:1;padding:8px 4px;border-radius:8px;border:1.5px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:12px;cursor:pointer;}
 .speed-btn.active{border-color:var(--purple);color:var(--purple);}
 .diff-btn-row{display:flex;gap:6px;margin-bottom:12px;}
-.diff-btn{flex:1;padding:10px 4px;border-radius:9px;border:2px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
+.diff-btn{flex:1;padding:10px 4px;border-radius:9px;border:1.5px solid var(--sub);color:var(--sub);background:transparent;font-weight:900;font-size:11px;cursor:pointer;}
 .diff-btn.active{border-color:var(--orange);color:var(--orange);}
 .diff-btn.locked{opacity:0.45;cursor:not-allowed;}
 .diff-desc-box{border:1.5px solid var(--sub);border-radius:9px;padding:8px 10px;text-align:left;}
 .unlock-msg{color:var(--orange);font-weight:900;font-size:11px;letter-spacing:0.5px;margin-bottom:10px;}
 .tutorial-overlay{position:fixed;inset:0;z-index:90;pointer-events:none;}
-.tutorial-highlight{position:absolute;border-radius:10px;border:2.5px solid var(--orange);box-shadow:0 0 0 2000px rgba(27,42,74,0.55), 0 0 14px rgba(255,122,0,0.7);animation:tutorialPulse 1s ease-in-out infinite alternate;pointer-events:none;}
+.tutorial-highlight{position:absolute;border-radius:10px;border:1.5px solid var(--orange);box-shadow:0 0 0 2000px rgba(27,42,74,0.55), 0 0 14px rgba(255,122,0,0.7);animation:tutorialPulse 1s ease-in-out infinite alternate;pointer-events:none;}
 @keyframes tutorialPulse{0%{box-shadow:0 0 0 2000px rgba(27,42,74,0.55), 0 0 6px rgba(255,122,0,0.5);}100%{box-shadow:0 0 0 2000px rgba(27,42,74,0.55), 0 0 18px rgba(255,122,0,0.9);}}
-.tutorial-bubble{position:absolute;background:var(--bg);border:2px solid var(--orange);border-radius:14px;padding:12px 14px;max-width:260px;box-shadow:0 6px 18px rgba(27,42,74,0.3);pointer-events:auto;--arrow-left:24px;}
-.tutorial-bubble::before{content:'';position:absolute;left:var(--arrow-left);width:14px;height:14px;background:var(--bg);border:2px solid var(--orange);transform:translateX(-50%) rotate(45deg);}
+.tutorial-bubble{position:absolute;background:var(--bg);border:1.5px solid var(--orange);border-radius:14px;padding:12px 14px;max-width:260px;box-shadow:0 6px 18px rgba(27,42,74,0.3);pointer-events:auto;--arrow-left:24px;}
+.tutorial-bubble::before{content:'';position:absolute;left:var(--arrow-left);width:14px;height:14px;background:var(--bg);border:1.5px solid var(--orange);transform:translateX(-50%) rotate(45deg);}
 .tutorial-bubble.arrow-top::before{top:-8px;border-right:none;border-bottom:none;}
 .tutorial-bubble.arrow-bottom::before{bottom:-8px;border-left:none;border-top:none;}
 .tutorial-step-num{font-size:9px;color:var(--orange);letter-spacing:1px;font-weight:900;margin-bottom:4px;}
 .tutorial-text{font-size:12px;color:var(--ink);line-height:1.6;margin-bottom:10px;}
-.tutorial-next-btn{width:100%;padding:8px;border-radius:9px;border:2px solid var(--orange);background:transparent;color:var(--orange);font-weight:900;font-size:11px;cursor:pointer;}
+.tutorial-btn-row{display:flex;gap:6px;}
+.tutorial-next-btn{width:100%;padding:8px;border-radius:9px;border:1.5px solid var(--orange);background:transparent;color:var(--orange);font-weight:900;font-size:11px;cursor:pointer;flex:2;}
+.tutorial-back-btn{padding:8px 10px;border-radius:9px;border:1.5px solid var(--sub);background:transparent;color:var(--sub);font-weight:700;font-size:10px;cursor:pointer;flex:1;}
+.mini-hint{text-align:center;font-size:9px;color:var(--orange);font-weight:700;margin-bottom:3px;animation:miniHintBob 1s ease-in-out infinite alternate;}
+@keyframes miniHintBob{0%{opacity:0.6;transform:translateY(0);}100%{opacity:1;transform:translateY(-2px);}}
+.shop-mini-hint{font-size:8.5px;color:var(--orange);font-weight:700;margin:2px 0 4px;}
 .sound-toggle.off{border-color:var(--sub);color:var(--sub);}
 .settings-modal input[type=range]{width:100%;accent-color:var(--purple);}
 .settings-close{width:100%;padding:10px;border-radius:9px;border:1.5px solid var(--sub);background:transparent;color:var(--sub);font-weight:700;cursor:pointer;font-size:12px;margin-top:4px;}
@@ -155,7 +160,7 @@ html,body{
 .shop-slots{display:flex;align-items:stretch;gap:6px;margin-bottom:6px;}
 .slot{flex:1;background:transparent;border:1.5px solid var(--sub);border-radius:8px;padding:3px;height:160px;display:flex;flex-direction:column;justify-content:space-between;min-width:0;overflow:hidden;}
 .slot.fever-slot{height:196px;}
-.fever-buy-btn{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:9.5px;line-height:1.2;cursor:pointer;background:transparent;border:2px solid var(--orange);color:var(--orange);animation:feverBtnPulse 1s ease-in-out infinite alternate;}
+.fever-buy-btn{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:9.5px;line-height:1.2;cursor:pointer;background:transparent;border:1.5px solid var(--orange);color:var(--orange);animation:feverBtnPulse 1s ease-in-out infinite alternate;}
 .fever-buy-btn:disabled{background:transparent;border-color:var(--sub);color:var(--sub);animation:none;}
 @keyframes feverBtnPulse{0%{box-shadow:0 0 0 rgba(255,122,0,0);}100%{box-shadow:0 0 6px rgba(255,122,0,0.6);}}
 .role-shop.fever-live{animation:feverGlow 1.1s ease-in-out infinite alternate;}
@@ -164,7 +169,7 @@ html,body{
 
 /* フィーバータイム演出：ゲーム全体のアウトライン基調デザインに合わせたバナー */
 .fever-banner{position:fixed;top:16%;left:50%;transform:translate(-50%,-50%);z-index:80;pointer-events:none;animation:feverBannerPop 2.6s cubic-bezier(.22,.9,.3,1) forwards;}
-.fever-banner-card{background:var(--bg);border:2.5px solid var(--orange);border-radius:16px;padding:12px 20px;text-align:center;box-shadow:0 0 0 5px rgba(255,122,0,0.12), 0 10px 26px rgba(27,42,74,0.18);max-width:92vw;overflow:hidden;}
+.fever-banner-card{background:var(--bg);border:1.5px solid var(--orange);border-radius:16px;padding:12px 20px;text-align:center;box-shadow:0 0 0 5px rgba(255,122,0,0.12), 0 10px 26px rgba(27,42,74,0.18);max-width:92vw;overflow:hidden;}
 .fever-row{font-family:'Share Tech Mono',monospace;font-size:12px;font-weight:900;letter-spacing:1px;white-space:nowrap;line-height:1.5;overflow:hidden;}
 .fever-banner-sub2{font-size:9px;font-weight:700;margin-top:3px;letter-spacing:0.2px;color:var(--sub);}
 @keyframes feverBannerPop{
@@ -187,20 +192,20 @@ html,body{
 .slot .price-label{font-size:6.5px;color:var(--sub);letter-spacing:0.5px;margin-bottom:1px;}
 .slot .price-big{font-size:15px;font-family:'Share Tech Mono',monospace;font-weight:900;line-height:1;}
 .slot .price-big.raise{font-size:19px;}
-.slot button{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:10px;line-height:1.2;cursor:pointer;background:transparent;border:2px solid var(--purple);color:var(--purple);min-height:32px;}
+.slot button{width:100%;margin-top:3px;padding:6px 3px;border-radius:8px;font-weight:900;font-size:10px;line-height:1.2;cursor:pointer;background:transparent;border:1.5px solid var(--purple);color:var(--purple);min-height:32px;}
 .slot button:disabled{border-color:var(--sub)!important;color:var(--sub)!important;cursor:not-allowed;}
 .slot .empty{color:var(--sub);font-size:9px;text-align:center;margin:auto;}
 
 .shop-status{display:flex;justify-content:space-between;align-items:center;font-size:9px;color:var(--sub);margin-bottom:3px;}
-.enter-btn{width:100%;padding:12px;border:none;border-radius:9px;background:transparent;border:2px solid var(--role-shop);color:var(--role-shop);font-weight:900;cursor:pointer;font-size:13px;}
+.enter-btn{width:100%;padding:12px;border:none;border-radius:9px;background:transparent;border:1.5px solid var(--role-shop);color:var(--role-shop);font-weight:900;cursor:pointer;font-size:13px;}
 .enter-btn:active{transform:scale(0.97);}
 .enter-btn:disabled{border-color:var(--sub);color:var(--sub);cursor:not-allowed;}
-.leave-btn{width:100%;padding:10px;border-radius:9px;background:transparent;border:2px solid var(--role-shop);color:var(--role-shop);font-weight:900;cursor:pointer;font-size:12px;margin-top:5px;}
+.leave-btn{width:100%;padding:10px;border-radius:9px;background:transparent;border:1.5px solid var(--role-shop);color:var(--role-shop);font-weight:900;cursor:pointer;font-size:12px;margin-top:5px;}
 .leave-btn:active{transform:scale(0.97);}
 
 /* log */
 .log-box{max-height:64px;overflow-y:auto;display:flex;flex-direction:column-reverse;font-size:8px;font-family:'Share Tech Mono',monospace;}
-.log-line{padding:1px 0;border-bottom:1px solid var(--paper);color:var(--sub);}
+.log-line{padding:1px 0;border-bottom:1.5px solid var(--paper);color:var(--sub);}
 .log-line b{color:var(--ink);}
 .log-line.win{color:var(--c-buff);font-weight:700;}
 .log-line.atk{color:var(--c-debuff);font-weight:700;}
@@ -212,12 +217,12 @@ html,body{
 .inv-chip{font-size:8px;padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap;border:1.5px solid var(--sub);background:transparent;cursor:pointer;}
 .inv-empty{font-size:8px;color:var(--sub);font-style:italic;}
 .inv-tip{
-  position:absolute;background:var(--ink);color:var(--cream);font-size:9px;line-height:1.4;
-  padding:6px 8px;border-radius:8px;max-width:190px;z-index:6;display:none;pointer-events:none;
-  box-shadow:0 3px 8px rgba(0,0,0,0.25);
+  position:fixed;background:var(--orange);color:#fff;font-size:11px;line-height:1.5;font-weight:700;
+  padding:8px 10px;border-radius:9px;max-width:220px;z-index:95;display:none;pointer-events:none;
+  box-shadow:0 4px 14px rgba(27,42,74,0.35);
 }
 .inv-tip.show{display:block;}
-.inv-tip::after{content:'';position:absolute;bottom:-5px;left:16px;border-width:5px 5px 0;border-style:solid;border-color:var(--ink) transparent transparent transparent;}
+.inv-tip::after{content:'';position:absolute;bottom:-5px;left:16px;border-width:5px 5px 0;border-style:solid;border-color:var(--orange) transparent transparent transparent;}
 
 .self-row{display:flex;gap:10px;align-items:center;}
 .die-wrap{position:relative;flex-shrink:0;}
@@ -244,24 +249,51 @@ html,body{
 }
 .self-info{flex:1;min-width:0;}
 .self-name{font-size:11px;color:var(--role-self);font-weight:700;margin-bottom:3px;}
-.progress-wrap{border:1.5px solid var(--role-self);border-radius:6px;height:14px;position:relative;overflow:hidden;margin-bottom:3px;background:rgba(30,111,255,0.1);}
+.progress-outer{position:relative;margin-bottom:6px;}
+.progress-wrap{border:1.5px solid var(--role-self);border-radius:10px;height:26px;position:relative;overflow:hidden;background:rgba(30,111,255,0.1);}
 .progress-fill{height:100%;background:var(--role-self);transition:width .25s;}
-.progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'Share Tech Mono',monospace;color:var(--ink);font-weight:700;text-shadow:0 0 3px var(--bg),0 0 3px var(--bg),0 0 3px var(--bg);}
+.progress-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-family:'Share Tech Mono',monospace;color:var(--ink);font-weight:900;letter-spacing:1px;text-shadow:0 0 4px var(--bg),0 0 4px var(--bg),0 0 4px var(--bg),0 0 4px var(--bg),0 0 8px var(--bg);pointer-events:none;}
 .stat-row{display:flex;gap:8px;font-size:9px;color:var(--sub);}
 .stat-row b{color:var(--ink);}
 
 .roll-btn{
   margin-top:5px;width:100%;padding:11px;border:none;border-radius:12px;
-  background:var(--orange);color:var(--cream);font-weight:900;font-size:15px;letter-spacing:1.5px;
+  background:rgba(255,122,0,0.25);color:var(--cream);font-weight:900;font-size:12px;letter-spacing:0.5px;
   cursor:pointer;transition:transform .06s;user-select:none;
+  position:relative;overflow:hidden;
 }
 .roll-btn:active{transform:scale(0.96);}
 .roll-btn.cooldown{background:transparent;color:var(--sub);border:1.5px solid var(--sub);}
+.roll-btn-fill{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--orange);transition:width .05s linear;z-index:0;}
+.roll-btn.cooldown .roll-btn-fill{display:none;}
+.roll-btn-label{position:relative;z-index:1;}
+.mini-bar{display:inline-block;width:22px;height:6px;border-radius:3px;border:1.5px solid var(--sub);background:transparent;overflow:hidden;position:relative;opacity:0.35;transition:opacity .15s;}
+.mini-bar.active{opacity:1;border-color:var(--orange);}
+.mini-bar.active{opacity:1;}
+.mini-bar-fill{position:absolute;top:0;bottom:0;left:-40%;width:40%;background:var(--orange);animation:miniBarSweep 0.5s linear infinite;}
+.mini-bar:not(.active) .mini-bar-fill{animation-play-state:paused;}
+@keyframes miniBarSweep{0%{left:-40%;}100%{left:100%;}}
 
-.cooldown-bar-wrap{height:6px;border-radius:3px;background:rgba(30,111,255,0.1);border:1px solid var(--role-self);overflow:hidden;margin-top:4px;}
-.cooldown-bar-fill{height:100%;background:var(--green);transition:width .05s linear;}
-.cooldown-bar-fill.spinning{background:var(--orange);}
-.cooldown-bar-fill.frozen{background:var(--red);}
+.self-name-row{display:flex;align-items:center;gap:6px;}
+.deco-cluster{display:flex;gap:4px;align-items:center;}
+.deco-ring{display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;border-radius:50%;border:1.5px solid var(--sub);flex-shrink:0;}
+.deco-ring .deco-dot{width:4px;height:4px;border-radius:50%;background:var(--sub);}
+.deco-ring.c1{border-color:var(--red);}
+.deco-ring.c1 .deco-dot{background:var(--red);animation:decoBlink 0.6s step-start infinite;}
+.deco-ring.c2{border-color:var(--blue);}
+.deco-ring.c2 .deco-dot{background:var(--blue);animation:decoBlink 1.3s step-start infinite;}
+.deco-ring.c3{border-color:var(--yellow);}
+.deco-ring.c3 .deco-dot{background:var(--yellow);animation:decoBlink 0.85s step-start infinite;}
+.deco-ring.c4{border-color:var(--purple);}
+.deco-ring.c4 .deco-dot{background:var(--purple);animation:decoBlink 1.9s step-start infinite;}
+.deco-ring.c5{border-color:var(--green);}
+.deco-ring.c5 .deco-dot{background:var(--green);animation:decoBlink 0.45s step-start infinite;}
+@keyframes decoBlink{50%{opacity:0.1;}}
+/* 線の丸がクールタイムの役割も兼ねる：充填中は全部せわしなく点滅、凍結中は赤一色で速い点滅 */
+.deco-cluster.cooling .deco-dot{animation-duration:0.15s!important;}
+.deco-cluster.frozen .deco-ring{border-color:var(--red)!important;}
+.deco-cluster.frozen .deco-dot{background:var(--red)!important;animation-duration:0.12s!important;}
+
 .cooldown-label{font-size:9px;color:var(--sub);text-align:center;margin-top:3px;letter-spacing:0.5px;}
 
 .info-badges{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;max-height:34px;overflow-y:auto;}
@@ -282,7 +314,7 @@ html,body{
 
 .win-overlay{position:fixed;inset:0;background:rgba(27,42,74,0.92);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:60;text-align:center;padding:16px;padding-top:40px;overflow-y:auto;}
 .win-overlay h1{font-family:'Share Tech Mono',monospace;font-size:32px;color:var(--yellow);letter-spacing:2px;}
-.win-overlay button{margin-top:16px;margin-bottom:40px;padding:10px 22px;border-radius:10px;background:transparent;border:2px solid var(--yellow);color:var(--yellow);font-weight:900;cursor:pointer;flex-shrink:0;}
+.win-overlay button{margin-top:16px;margin-bottom:40px;padding:10px 22px;border-radius:10px;background:transparent;border:1.5px solid var(--yellow);color:var(--yellow);font-weight:900;cursor:pointer;flex-shrink:0;}
 .result-list{width:100%;max-width:340px;display:flex;flex-direction:column;gap:6px;}
 .result-card{border:1.5px solid var(--sub);border-radius:10px;padding:8px;text-align:left;background:rgba(255,255,255,0.03);}
 .result-head{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:4px;}
@@ -370,10 +402,12 @@ document.addEventListener('pointerdown', function(e){
   else if(action==='resetdata'){ uiResetData(); }
   else if(action==='confirmcancel'){ uiConfirmCancel(); }
   else if(action==='confirmok'){ uiConfirmOk(); }
+  else if(action==='invtip'){ showInvTip(btn, parseInt(btn.dataset.idx,10)); }
   else if(action==='selectmode'){ uiSelectMode(btn.dataset.mode); }
   else if(action==='selectcount'){ uiSelectPlayerCount(parseInt(btn.dataset.count,10)); }
   else if(action==='togglecpu'){ uiToggleCpuSlot(parseInt(btn.dataset.slot,10)); }
   else if(action==='tutorialnext'){ uiTutorialNext(); }
+  else if(action==='tutorialback'){ uiTutorialBack(); }
 }, {passive:false});
 
 // ---------- 実音源（アップロードされたmp3）----------
@@ -727,7 +761,7 @@ const MULT_SEQ = [1, 1.5, 2, 3, 4, 5, 6, 8, 10]; // オークションの倍率�
 const AUCTION_MS = 5000;
 const CHAIN_MS_DEFAULT = 5000; // 値引きチェイン（購入時）はこれまで通り
 const CHAIN_LUCK_MS = 30000; // 幸運チェインは長めに
-const ROLL_ANIM_MS = 1100; // この回転時間そのものがクールタイムになる（初期は長め）
+const ROLL_ANIM_MS = 1600; // この回転時間そのものがクールタイムになる（長めに設定）
 
 function diceUpgradeCost(currentCount){
   const cap = 8;
@@ -750,6 +784,7 @@ function weightedItemPick(progress){
     if(!allowed.includes(it.rarity)) continue;
     let weight = w[it.rarity];
     if(it.type==='flatBonus') weight *= 3; // 出目+系はクリアの生命線なので出現率アップ
+    if(it.type==='spinReduce' || it.type==='spinReduce2') weight *= 3; // クールタイムを伸ばした分、短縮アイテムの出現率も上げる
     for(let i=0;i<weight;i++) pool.push(it);
   }
   return pool[Math.floor(Math.random()*pool.length)];
@@ -953,7 +988,7 @@ function requestRoll(p){
   const dur = Math.max(180, rawDur - (p.spinReduction||0));
   p.rollAnim = {active:true, startedAt: now, endsAt: now+dur, dur, disp: 1+Math.floor(Math.random()*9)};
   p.busyUntil = now + dur;
-  if(p.isHuman){ updateSelfLive(); startSpinSound(); }
+  if(p.isHuman){ updateSelfLive(); startSpinSound(); incHintCount(ROLL_HINT_KEY); }
 }
 
 function compensate(t){
@@ -1214,7 +1249,7 @@ function startAuction(p, slotIdx){
   if(p.comboCount>0){ addLog(`${p.name} のCOMBOが途切れた（ショップに参加）`); }
   p.comboCount = 0; // オークションに参加するとコンボの勢いが途切れる
   addLog(`${p.name} が「${item.name}」に${price}コインで入札！誰か競る？（${AUCTION_MS/1000}秒）`);
-  if(p.isHuman) sfxBidStart();
+  if(p.isHuman) { sfxBidStart(); incHintCount(BID_HINT_KEY); }
   renderScroll();
 }
 
@@ -1322,8 +1357,8 @@ function applyEffect(p, item){
     case 'shiftRange2': p.minBonus += 2; p.maxBonus += 2; break;
     case 'coinBoost': p.coinBonusPerRoll = (p.coinBonusPerRoll||0) + 1; break;
     case 'priceDiscount': p.priceDiscount = Math.min(0.5, (p.priceDiscount||0) + 0.05); break;
-    case 'spinReduce': p.spinReduction = Math.min(1500, (p.spinReduction||0) + 350); break;
-    case 'spinReduce2': p.spinReduction = Math.min(1500, (p.spinReduction||0) + 650); break;
+    case 'spinReduce': p.spinReduction = Math.min(2000, (p.spinReduction||0) + 450); break;
+    case 'spinReduce2': p.spinReduction = Math.min(2000, (p.spinReduction||0) + 800); break;
     case 'debuffResist': p.debuffResist = Math.min(0.75, (p.debuffResist||0) + 0.15); break;
     case 'econResist': p.econResist = Math.min(0.8, (p.econResist||0) + 0.2); break;
     case 'immuneStealPerm': p.effects.immuneStealPermanent = true; break;
@@ -1537,19 +1572,30 @@ function buildSkeleton(){
           <div class="big-die" id="bigDie">●</div>
         </div>
         <div class="self-info">
-          <div class="self-name" id="selfName">あなた</div>
-          <div class="progress-wrap"><div class="progress-fill" id="selfProgFill" style="width:0%"></div><div class="progress-label mono" id="selfProgLabel">0000 / 9999</div></div>
+          <div class="self-name-row">
+            <div class="self-name" id="selfName">あなた</div>
+            <span class="deco-cluster">
+              <span class="deco-ring c2"><span class="deco-dot"></span></span>
+              <span class="mini-bar" id="miniBar"><span class="mini-bar-fill"></span></span>
+            </span>
+          </div>
+          <div class="progress-outer"><div class="progress-wrap"><div class="progress-fill" id="selfProgFill" style="width:0%"></div></div><div class="progress-label mono" id="selfProgLabel">0000 / 9999</div></div>
           <div class="stat-row"><span>コイン: <b class="mono" id="selfCoins">0</b></span><span>ダイス範囲: <b class="mono" id="selfRange">1-6</b></span><span>ボーナス: <b class="mono" id="selfBonus">+0</b></span><span>倍率: <b class="mono" id="selfMult">×1.00</b></span></div>
         </div>
       </div>
-      <button class="roll-btn" id="rollBtn">サイコロを振る</button>
-      <div class="cooldown-bar-wrap"><div class="cooldown-bar-fill" id="cdFill" style="width:100%"></div></div>
+      <div class="mini-hint" id="rollHint">タップしてサイコロを振る</div>
+      <button class="roll-btn" id="rollBtn"><div class="roll-btn-fill" id="cdFill"></div><span class="roll-btn-label">ROLL ／ サイコロを振る</span></button>
       <div class="cooldown-label" id="cdLabel">準備完了 — 振れます</div>
       <div class="info-badges" id="selfBadges"></div>
     </div>
   `;
   const btn = document.getElementById('rollBtn');
-  const fire = (e)=>{ e.preventDefault(); ensureAudio(); requestRoll(state.players[0]); };
+  const fire = (e)=>{
+    e.preventDefault();
+    ensureAudio();
+    if(document.getElementById('tutorialOverlay')){ uiTutorialNext(); return; }
+    requestRoll(state.players[0]);
+  };
   btn.addEventListener('pointerdown', fire, {passive:false});
   // タイトルバーが今作られたばかりなので、すでに流れているBGMの曲名を改めて表示し直す
   if(bgmSettings.on && currentBgmIndex>=0 && BGM_TRACKS[currentBgmIndex]){
@@ -1609,6 +1655,9 @@ function renderScroll(){
   // shop — オークション制（購入を押すと入札スタート、他の人が競れる）
   const feverActive = state.feverTime && state.feverTime.expiresAt > now;
   html += `<div class="panel role-shop ${feverActive?'fever-live':''}"><h2>SHOP（オークション制）${feverActive?`<span class="fever-tag">FEVER TIME！残り${Math.ceil((state.feverTime.expiresAt-now)/1000)}秒</span>`:''}</h2>`;
+  if(getHintCount(BID_HINT_KEY) < HINT_THRESHOLD && !document.getElementById('tutorialOverlay')){
+    html += `<div class="shop-mini-hint">↓ 気になるアイテムの「BID」を押すと入札できる</div>`;
+  }
   if(human.effects.seeRestockPermanent){ html += `<div class="shop-status"><span class="mono">次回入荷まで ${Math.max(0,Math.ceil((state.shop.nextRestock-now)/1000))}秒</span></div>`; }
   if(human.effects.previewPermanent && state.shop.preview){
     html += `<div class="shop-status"><span>次回入荷予告: ${state.shop.preview.map(it=>it.name).join(' ／ ')}</span></div>`;
@@ -1708,6 +1757,11 @@ function updateSelfLive(){
   const label = document.getElementById('selfProgLabel');
   if(fill) fill.style.width = Math.min(100, human.progress/GOAL*100)+'%';
   if(label) label.textContent = fmt(human.progress)+' / 9999';
+  const rollHintEl = document.getElementById('rollHint');
+  if(rollHintEl){
+    const showHint = getHintCount(ROLL_HINT_KEY) < HINT_THRESHOLD && !document.getElementById('tutorialOverlay');
+    rollHintEl.style.display = showHint ? '' : 'none';
+  }
 
   const coinsEl = document.getElementById('selfCoins');
   if(coinsEl) coinsEl.textContent = human.progress;
@@ -1720,25 +1774,37 @@ function updateSelfLive(){
 
   const btn = document.getElementById('rollBtn');
   const cdFill = document.getElementById('cdFill');
+  const miniBar = document.getElementById('miniBar');
+  const decoCluster = document.querySelector('.deco-cluster');
   const cdLabel = document.getElementById('cdLabel');
   if(btn){
     let disabled = !!state.winner || frozen || spinning;
     btn.disabled = disabled;
-    if(frozen){ btn.textContent = '凍結中...'; btn.className='roll-btn cooldown'; }
-    else if(spinning){ btn.textContent = `${human.rollAnim.disp} ...`; btn.className='roll-btn'; }
-    else { btn.textContent = 'サイコロを振る'; btn.className='roll-btn'; }
-  }
-  if(cdFill && cdLabel){
-    if(frozen){ cdFill.style.width='0%'; cdFill.className='cooldown-bar-fill frozen'; cdLabel.textContent='ゲージ凍結中'; }
-    else if(spinning){
-      const frac = Math.min(1, (now-human.rollAnim.startedAt)/human.rollAnim.dur);
-      cdFill.style.width = (frac*100)+'%';
-      cdFill.className='cooldown-bar-fill spinning';
-      cdLabel.textContent = '回転中（＝クールタイム）...' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:'');
+    const labelEl = btn.querySelector('.roll-btn-label');
+    if(frozen){
+      btn.className='roll-btn cooldown';
+      if(labelEl) labelEl.textContent = 'ROLL ／ サイコロを振る';
+      if(cdFill) cdFill.style.width='0%';
+      if(miniBar) miniBar.className = 'mini-bar';
+      if(decoCluster) decoCluster.className = 'deco-cluster frozen';
+      if(cdLabel) cdLabel.textContent = 'ゲージ凍結中';
+    } else if(spinning){
+      btn.className='roll-btn spinning';
+      if(labelEl) labelEl.textContent = 'ROLL ／ サイコロを振る';
+      if(cdFill){
+        const frac = Math.min(1, (now-human.rollAnim.startedAt)/human.rollAnim.dur);
+        cdFill.style.width = (frac*100)+'%';
+      }
+      if(miniBar) miniBar.className = 'mini-bar active';
+      if(decoCluster) decoCluster.className = 'deco-cluster cooling';
+      if(cdLabel) cdLabel.textContent = '回転中（＝クールタイム）...' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:'');
     } else {
-      cdFill.style.width='100%';
-      cdFill.className='cooldown-bar-fill';
-      cdLabel.textContent = state.awaitingFirstRoll ? 'サイコロを振ってスタート！' : ('準備完了 — 振れます' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:''));
+      btn.className='roll-btn';
+      if(labelEl) labelEl.textContent = state.awaitingFirstRoll ? 'START ／ サイコロを振ってスタート！' : 'ROLL ／ サイコロを振る';
+      if(cdFill) cdFill.style.width='100%';
+      if(miniBar) miniBar.className = 'mini-bar';
+      if(decoCluster) decoCluster.className = 'deco-cluster';
+      if(cdLabel) cdLabel.textContent = '準備完了 — 振れます' + (human.spinReduction?` ／ 回転短縮 -${human.spinReduction}ms`:'');
     }
   }
   const badgesEl = document.getElementById('selfBadges');
@@ -1752,7 +1818,7 @@ function updateSelfLive(){
     } else {
       invEl.innerHTML = human.inventory.map((it,idx)=>{
         const c = RARITY[it.rarity].color;
-        return `<span class="inv-chip" style="border-color:${c};color:${c}" onclick="showInvTip(this, ${idx})">${it.name}</span>`;
+        return `<span class="inv-chip" style="border-color:${c};color:${c}" data-action="invtip" data-idx="${idx}">${it.name}</span>`;
       }).join('');
     }
   }
@@ -1764,13 +1830,11 @@ function showInvTip(el, idx){
   const human = state.players[0];
   const item = human.inventory[idx];
   const tip = document.getElementById('invTip');
-  const panel = document.getElementById('invPanel');
-  if(!item || !tip || !panel) return;
+  if(!item || !tip) return;
   tip.textContent = item.desc;
-  const panelRect = panel.getBoundingClientRect();
   const elRect = el.getBoundingClientRect();
-  tip.style.left = Math.max(4, elRect.left - panelRect.left) + 'px';
-  tip.style.top = (elRect.top - panelRect.top - 8) + 'px';
+  tip.style.left = Math.max(4, elRect.left) + 'px';
+  tip.style.top = (elRect.top - 8) + 'px';
   tip.style.transform = 'translateY(-100%)';
   tip.classList.add('show');
   clearTimeout(invTipTimer);
@@ -2199,6 +2263,16 @@ function uiConfirmDifficultyStart(){
 
 // ---------- 初回だけ出す「ボタンを指し示す」吹き出しチュートリアル ----------
 const ONBOARD_KEY = 'game9999_onboarded_v1';
+// ---------- 最初の数回だけ出す小さなヒント（振る／入札） ----------
+const ROLL_HINT_KEY = 'game9999_roll_hint_count';
+const BID_HINT_KEY = 'game9999_bid_hint_count';
+const HINT_THRESHOLD = 3;
+function getHintCount(key){
+  try{ return parseInt(localStorage.getItem(key)||'0',10); }catch(e){ return 0; }
+}
+function incHintCount(key){
+  try{ localStorage.setItem(key, String(getHintCount(key)+1)); }catch(e){}
+}
 function hasSeenOnboarding(){
   try{ return localStorage.getItem(ONBOARD_KEY) === '1'; }catch(e){ return false; }
 }
@@ -2206,7 +2280,7 @@ function markOnboarded(){
   try{ localStorage.setItem(ONBOARD_KEY, '1'); }catch(e){}
 }
 const TUTORIAL_STEPS = [
-  { selector:'#rollBtn', text:'サイコロを振るボタン。出た数字が「進捗」として増えていく。' },
+  { selector:'#rollBtn', text:'サイコロを振るボタン。出た数字が<br>「進捗」として増えていく。' },
   { selector:'.stat-row', text:'この数字がそのままお金。ショップで使うと、その分だけ減る（＝一時的なリスク投資）。' },
   { selector:'.panel.role-shop', text:'気になるアイテムの「BID」を押すと入札を開始できる。他のプレイヤーが競り上げてくることもある。' },
   { selector:'#invPanel', text:'買ったアイテムが並ぶ場所。タップすると効果を確認できる。' },
@@ -2240,11 +2314,15 @@ function renderTutorialStep(){
   overlay.appendChild(hl);
 
   const isLast = tutorialStepIdx === TUTORIAL_STEPS.length-1;
+  const isFirst = tutorialStepIdx === 0;
   const bubble = document.createElement('div');
   bubble.className = 'tutorial-bubble';
   bubble.innerHTML = `<div class="tutorial-step-num">${tutorialStepIdx+1} / ${TUTORIAL_STEPS.length}</div>
     <div class="tutorial-text">${step.text}</div>
-    <button class="tutorial-next-btn" data-action="tutorialnext">${isLast?'OK ／ わかった':'NEXT ／ つぎへ'}</button>`;
+    <div class="tutorial-btn-row">
+      ${isFirst?'':'<button class="tutorial-back-btn" data-action="tutorialback">戻る</button>'}
+      <button class="tutorial-next-btn" data-action="tutorialnext">${isLast?'OK ／ わかった':'NEXT ／ つぎへ'}</button>
+    </div>`;
   overlay.appendChild(bubble);
   document.body.appendChild(overlay);
 
@@ -2279,6 +2357,13 @@ function finishTutorial(){
 function uiTutorialNext(){
   sfxClick();
   advanceTutorial();
+}
+function uiTutorialBack(){
+  sfxClick();
+  if(tutorialStepIdx > 0){
+    tutorialStepIdx--;
+    renderTutorialStep();
+  }
 }
 
 function uiResume(){
@@ -2323,7 +2408,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v4.3</div>
+        <div class="version-tag">v5.4</div>
       </div>
     </div>
   `;
