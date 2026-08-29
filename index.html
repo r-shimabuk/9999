@@ -267,7 +267,7 @@ html,body{
 .roll-btn-fill{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--orange);transition:width .05s linear;z-index:0;}
 .roll-btn.cooldown .roll-btn-fill{display:none;}
 .roll-btn-label{position:relative;z-index:1;}
-.mini-bar{display:inline-block;width:22px;height:11px;border-radius:3px;border:1.5px solid var(--orange);background:transparent;overflow:hidden;position:relative;vertical-align:middle;}
+.mini-bar{display:inline-block;width:22px;height:11px;border-radius:3px;border:1.5px solid var(--orange);background:transparent;overflow:hidden;position:relative;vertical-align:middle;opacity:1;}
 .mini-bar.active{opacity:1;}
 .mini-bar-fill{position:absolute;top:0;bottom:0;left:-40%;width:40%;background:var(--orange);animation:miniBarSweep 0.5s linear infinite;}
 .mini-bar:not(.active) .mini-bar-fill{animation-play-state:paused;}
@@ -2407,7 +2407,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v5.4</div>
+        <div class="version-tag">v5.5</div>
       </div>
     </div>
   `;
