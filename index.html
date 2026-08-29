@@ -433,6 +433,7 @@ document.addEventListener('pointerdown', function(e){
   else if(action==='difftab'){ uiSwitchDiffTab(btn.dataset.tab); }
   else if(action==='selectmode'){ uiSelectMode(btn.dataset.mode); }
   else if(action==='selectcount'){ uiSelectPlayerCount(parseInt(btn.dataset.count,10)); }
+  else if(action==='selectcpucount'){ uiSelectCpuCount(parseInt(btn.dataset.cpucount,10)); }
   else if(action==='togglecpu'){ uiToggleCpuSlot(parseInt(btn.dataset.slot,10)); }
   else if(action==='tutorialnext'){ uiTutorialNext(); }
   else if(action==='tutorialback'){ uiTutorialBack(); }
@@ -654,6 +655,37 @@ function sfxBuy(){ playClickSound(); }
 function sfxFail(){ playClickSound(); }
 function sfxChain(){ playClickSound(); }
 function sfxAura(){ playClickSound(); }
+
+// ---------- マルチプレイ：ホストの効果音をゲストにも届ける ----------
+// ホストの計算処理は今まで通り「if(p.isHuman) sfxXXX()」のパターンだったが、
+// リモートの人間プレイヤー（ゲスト）の分はローカルで鳴らせないので、
+// 代わりにサウンドキューに積んで配信し、該当するゲストのクライアント側で再生する。
+function humanSfx(p, kind, arg){
+  if(p.isHuman){ playSfxByKind(kind, arg); return; }
+  if(mpMode==='host' && p.netId!=null){
+    if(!state.mpSoundQueue) state.mpSoundQueue = [];
+    state.mpSoundQueue.push({netId:p.netId, kind, arg});
+  }
+}
+function playSfxByKind(kind, arg){
+  switch(kind){
+    case 'milestone': sfxMilestone(); break;
+    case 'checkpoint': sfxCheckpoint(); break;
+    case 'combo': sfxCombo(arg); break;
+    case 'rollResult': sfxRollResult(arg); break;
+    case 'win': sfxWin(); break;
+    case 'fail': sfxFail(); break;
+    case 'bidStart': sfxBidStart(); break;
+    case 'bidRaise': sfxBidRaise(arg); break;
+    case 'auctionWin': sfxAuctionWin(); break;
+    case 'buy': playBuySound(); break;
+    case 'jackpot': sfxJackpot(); break;
+    case 'aura': sfxAura(); break;
+    case 'leaderChange': sfxLeaderChange(); break;
+    case 'spinStart': startSpinSound(); break;
+    case 'spinStop': stopSpinSound(); break;
+  }
+}
 function sfxRestock(){ playClickSound(); }
 function sfxRestockWarn(){ playClickSound(); }
 function sfxWin(){ for(let i=0;i<4;i++) setTimeout(()=>playClickSound(), i*90); }
@@ -914,8 +946,9 @@ function initGame(){
     state.players = mpRoster.map((p, i)=> newPlayer(i, p.name, i===0, null, p.id));
     // 残りの枠は、選んだ人数までCPUで埋める
     for(let i=mpRoster.length; i<selectedPlayerCount; i++){
-      if(selectedCpuSlots[i-1]){
-        state.players.push(newPlayer(i, NAMES[i]||`CPU-${i}`, false, personalities[(i-1)%personalities.length]));
+      const cpuIdx = i - mpRoster.length;
+      if(selectedCpuSlots[cpuIdx]){
+        state.players.push(newPlayer(i, NAMES[i]||`CPU-${i}`, false, personalities[cpuIdx%personalities.length]));
       }
     }
   } else {
@@ -1032,7 +1065,7 @@ function requestRoll(p){
   const dur = Math.max(180, rawDur - (p.spinReduction||0));
   p.rollAnim = {active:true, startedAt: now, endsAt: now+dur, dur, disp: 1+Math.floor(Math.random()*9)};
   p.busyUntil = now + dur;
-  if(p.isHuman){ updateSelfLive(); startSpinSound(); incHintCount(ROLL_HINT_KEY); }
+  if(p.isHuman){ updateSelfLive(); startSpinSound(); incHintCount(ROLL_HINT_KEY); } else { humanSfx(p,'spinStart'); }
 }
 
 function compensate(t){
@@ -1063,7 +1096,7 @@ function finalizeRoll(p){
 
   const prevMilestone = Math.floor(p.progress/1000);
   p.progress = Math.min(GOAL, p.progress + total + (p.coinBonusPerRoll||0));
-  if(Math.floor(p.progress/1000) > prevMilestone){ if(p.isHuman) sfxMilestone(); addLog(`${p.name} が ${Math.floor(p.progress/1000)*1000} を突破！`); }
+  if(Math.floor(p.progress/1000) > prevMilestone){ humanSfx(p,'milestone'); addLog(`${p.name} が ${Math.floor(p.progress/1000)*1000} を突破！`); }
   // チェックポイント（1000刻み）に最初に到達した人だけ旗を獲得し、他の全員に10秒間+20%バフ
   for(let cp=1000; cp<GOAL; cp+=1000){
     if(p.progress >= cp && !state.checkpointsClaimed[cp]){
@@ -1071,7 +1104,7 @@ function finalizeRoll(p){
       p.flags = (p.flags||0) + 1;
       state.checkpointBuff = { expiresAt: Date.now()+10000, ownerId: p.id };
       addLog(`${p.name} が ${cp} チェックポイントに最初に到達！旗を獲得！（他の全員に10秒間×1.35バフ）`, 'win');
-      if(p.isHuman) sfxCheckpoint();
+      humanSfx(p,'checkpoint');
     }
   }
   if(total > state.lastGlobalMaxRoll){
@@ -1080,7 +1113,7 @@ function finalizeRoll(p){
   }
   p.comboCount = (p.comboCount||0) + 1; // ロールし続ける限り伸びる（ショップに参加すると0にリセット）
   if(p.comboCount>=5 && p.comboCount % 5 === 0){
-    if(p.isHuman) sfxCombo(p.comboCount);
+    humanSfx(p,'combo',p.comboCount);
     addLog(`${p.name} が COMBO x${p.comboCount}！（出目×${comboMult.toFixed(2)}）`, 'win');
     if(p.comboCount % 10 === 0){
       const bonus = p.comboCount * 3;
@@ -1090,17 +1123,17 @@ function finalizeRoll(p){
   }
   const bonusTxt = ((p.multiplierFactor||1)>1||comboMult>1) ? `（${rawTotal}→×${((p.multiplierFactor||1)*comboMult).toFixed(2)}）` : '';
   addLog(`${p.name} が [${rolls.join(',')}] で合計+${total}${bonusTxt}（進捗${p.progress}）`);
-  if(p.isHuman) sfxRollResult(total);
+  humanSfx(p,'rollResult',total);
   if(p.isHuman) popRoll(total, p.comboCount);
   triggerAuras(p);
   const newLeader = getLeader();
-  if(newLeader.id !== lastLeaderId){ if(lastLeaderId!==null && p.isHuman) sfxLeaderChange(); lastLeaderId = newLeader.id; }
+  if(newLeader.id !== lastLeaderId){ if(lastLeaderId!==null) humanSfx(p,'leaderChange'); lastLeaderId = newLeader.id; }
   if(p.progress >= GOAL){
     state.winner = p;
     stopSpinSound();
     clearSavedGame();
     addLog(`${p.name} が 9999 に到達！勝利！`, 'win');
-    if(p.isHuman) sfxWin();
+    humanSfx(p,'win');
     renderWin();
   }
 }
@@ -1177,7 +1210,7 @@ function triggerAuras(p){
       t.bubble = '？？？'; t.bubbleUntil = now+4000; t.lastAttackerBy = p.name; compensate(t); fired = true;
     }
   }
-  if(fired && p.isHuman) sfxAura();
+  if(fired) humanSfx(p,'aura');
 }
 
 // fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
@@ -1198,7 +1231,7 @@ setInterval(()=>{
     if(p.rollAnim.active){
       if(now >= p.rollAnim.endsAt){
         p.rollAnim.active = false;
-        if(p.isHuman) stopSpinSound();
+        humanSfx(p,'spinStop');
         finalizeRoll(p);
       } else {
         p.rollAnim.disp = 1+Math.floor(Math.random()*9);
@@ -1303,12 +1336,12 @@ function startAuction(p, slotIdx){
   if(!item || state.shop.lockedUntil[slotIdx] > Date.now() || state.shop.auctions[slotIdx]) return;
   const basePrice = priceFor(p, item);
   const price = Math.round(basePrice * MULT_SEQ[0]);
-  if(p.progress < price) { addLog(`${p.name} は進捗が足りず入札できなかった。`); if(p.isHuman) sfxFail(); return; }
+  if(p.progress < price) { addLog(`${p.name} は進捗が足りず入札できなかった。`); humanSfx(p,'fail'); return; }
   state.shop.auctions[slotIdx] = { bidder: p.id, tier: 0, basePrice, deadline: Date.now()+spd(AUCTION_MS) };
   if(p.comboCount>0){ addLog(`${p.name} のCOMBOが途切れた（ショップに参加）`); }
   p.comboCount = 0; // オークションに参加するとコンボの勢いが途切れる
   addLog(`${p.name} が「${item.name}」に${price}コインで入札！誰か競る？（${AUCTION_MS/1000}秒）`);
-  if(p.isHuman) { sfxBidStart(); incHintCount(BID_HINT_KEY); }
+  humanSfx(p,'bidStart'); if(p.isHuman) incHintCount(BID_HINT_KEY);
   renderScroll();
 }
 
@@ -1330,7 +1363,7 @@ function raiseAuction(p, slotIdx, targetTier){
   auc.deadline = Date.now()+spd(AUCTION_MS);
   p.comboCount = 0; // 競り上げに参加するとコンボの勢いが途切れる
   addLog(`${p.name} が${MULT_SEQ[tier]}倍（${price}コイン）で競り上げた！`);
-  if(p.isHuman) sfxBidRaise(tier);
+  humanSfx(p,'bidRaise',tier);
   renderScroll();
 }
 
@@ -1343,11 +1376,11 @@ function finalizePurchase(slotIdx, bidder, item, price, logSuffix){
   if(bidder.inventory.length>50) bidder.inventory.shift();
   if(item.type==='junk'){
     addLog(`${bidder.name} が「${item.name}」を${price}コインで${logSuffix}…完全な無駄だった`, 'atk');
-    if(bidder.isHuman) sfxFail();
+    humanSfx(bidder,'fail');
   } else {
     applyEffect(bidder, item);
     addLog(`${bidder.name} が「${item.name}」を${price}コインで${logSuffix}！`, 'win');
-    if(bidder.isHuman) sfxAuctionWin();
+    humanSfx(bidder,'auctionWin');
   }
   triggerChain('discount', bidder);
   // フィーバータイム中は、売れたらすぐに棚を補充する
@@ -1370,7 +1403,7 @@ function resolveAuctionSlot(slotIdx){
   if(bidder.progress < price){
     addLog(`${bidder.name} は支払えず「${item.name}」の落札が流れた…`, 'atk');
     state.shop.slots[slotIdx] = null;
-    if(bidder.isHuman) sfxFail();
+    humanSfx(bidder,'fail');
     renderScroll();
     return;
   }
@@ -1401,7 +1434,7 @@ function feverBuy(p, slotIdx){
   state.shop.auctions[slotIdx] = null; // 進行中の入札があれば打ち切り
   p.comboCount = 0; // ショップ参加なのでコンボは途切れる
   finalizePurchase(slotIdx, p, item, price, 'フィーバー購入');
-  if(p.isHuman) sfxCheckpoint(); // 派手な専用音を流用
+  humanSfx(p,'checkpoint'); // 派手な専用音を流用
 }
 
 function checkComboSetA(p){
@@ -1409,7 +1442,7 @@ function checkComboSetA(p){
     p.effects.comboSetAComplete = true;
     p.multiplierFactor = (p.multiplierFactor||1) * 10; // 実質10倍
     addLog(`${p.name} が三色の欠片を揃えた！合計出目が実質10倍に！`, 'win');
-    if(p.isHuman) sfxJackpot();
+    humanSfx(p,'jackpot');
   }
 }
 
@@ -1575,6 +1608,7 @@ function saveDifficultyUnlocked(u){
 let selectedDifficulty = 'easy';
 let selectedPlayerCount = 4; // 自分を含めた総人数（2〜4）
 let selectedCpuSlots = [true, true, true]; // 自分以外の3枠。falseなら空席（オンライン対戦実装後に人間が入る予定）
+let selectedCpuCount = 3; // マルチプレイ時：接続人数に追加するCPUの人数（0〜）
 
 function aiAct(p){
   if(state.winner || state.paused) return;
@@ -2060,7 +2094,11 @@ function uiOpenSettings(){
   state.paused = true;
   const html = `<div class="overlay" id="settingsOverlay"><div class="settings-modal">
     <h3>SETTINGS ／ 設定</h3>
-    <div style="font-size:9px;color:var(--sub);margin:-8px 0 12px;">PAUSED ／ ゲームは一時停止中です</div>
+    <div style="font-size:9px;color:var(--sub);margin:-8px 0 12px;">${
+      mpMode==='host' ? 'HOST ／ 設定を開いている間、全員の進行が止まります'
+      : mpMode==='guest' ? 'GUEST ／ マルチプレイ中は一時停止できません（ホストの進行は止まりません）'
+      : 'PAUSED ／ ゲームは一時停止中です'
+    }</div>
     <div class="settings-row">
       <span>効果音</span>
       <button class="sound-toggle ${soundSettings.on?'':'off'}" id="soundToggleBtn" onclick="uiToggleSound()">${soundSettings.on?'ON':'OFF'}</button>
@@ -2229,6 +2267,11 @@ function uiReset(){
   const overlays = document.querySelectorAll('.overlay,.win-overlay');
   overlays.forEach(o=>o.remove());
   state.running = false;
+  if(mpMode || mpSocket){ // マルチプレイ中に戻る場合は、経路によらず必ず接続を切る
+    if(mpSocket){ try{ mpSocket.close(); }catch(e){} mpSocket = null; }
+    mpRoster = []; mpIsHost = false; mpMyId = null; mpRoomCode = null; mpMode = null; mpMyPlayerIndex = -1;
+    mpGuestSkeletonBuilt = false;
+  }
   renderStartScreen();
 }
 function uiStart(){ resetAllSfx(); ensureAudio(); playBidSound(); clearSavedGame(); initGame(); }
@@ -2398,6 +2441,7 @@ function uiMpLeave(){
   sfxClick();
   if(mpSocket){ try{ mpSocket.close(); }catch(e){} mpSocket = null; }
   mpRoster = []; mpIsHost = false; mpMyId = null; mpRoomCode = null; mpMode = null; mpMyPlayerIndex = -1;
+  mpGuestSkeletonBuilt = false;
   const el = document.getElementById('mpWaitOverlay');
   if(el) el.remove();
 }
@@ -2409,18 +2453,14 @@ function broadcastMpState(){
   if(now - mpLastBroadcast < 90) return;
   mpLastBroadcast = now;
   const payload = {
-    players: state.players.map(p=>({
-      id:p.id, name:p.name, netId:p.netId, personality:p.personality,
-      progress:p.progress, diceCount:p.diceCount, multiplierFactor:p.multiplierFactor,
-      flatRollBonus:p.flatRollBonus, comboCount:p.comboCount, flags:p.flags,
-      rollAnim:p.rollAnim, busyUntil:p.busyUntil, effects:p.effects,
-      bubble:p.bubble, bubbleUntil:p.bubbleUntil,
-      lastRollTotal:p.lastRollTotal, spinReduction:p.spinReduction,
-    })),
+    players: state.players, // 丸ごと送る（所持アイテム等の抜け漏れを防ぐ）
     shop: state.shop, chain: state.chain, feverTime: state.feverTime, nextFeverAt: state.nextFeverAt,
     checkpointBuff: state.checkpointBuff, difficulty: state.difficulty,
     winner: state.winner ? state.winner.id : null,
+    log: state.log.slice(-6),
+    soundQueue: state.mpSoundQueue || [],
   };
+  state.mpSoundQueue = []; // 送ったらリセット
   try{ mpSocket.send(JSON.stringify({type:'state', payload})); }catch(e){}
 }
 
@@ -2443,19 +2483,15 @@ function applyMpState(payload){
   if(!selfEntry) return;
   const others = payload.players.filter((_,i)=>i!==mpMyPlayerIndex);
   const reordered = [selfEntry, ...others];
-  state.players = reordered.map((p,i)=>{
-    const np = newPlayer(p.id, p.name, i===0, p.personality, p.netId);
-    Object.assign(np, p, {isHuman:i===0});
-    return np;
-  });
+  state.players = reordered.map((p,i)=> Object.assign({}, p, {isHuman:i===0}));
   state.shop = payload.shop;
   state.chain = payload.chain;
   state.feverTime = payload.feverTime;
   state.nextFeverAt = payload.nextFeverAt;
   state.checkpointBuff = payload.checkpointBuff;
   state.difficulty = payload.difficulty;
+  if(payload.log) state.log = payload.log;
   state.running = true;
-  state.paused = false;
   state.awaitingFirstRoll = false;
   if(!mpGuestSkeletonBuilt){
     mpGuestSkeletonBuilt = true;
@@ -2464,6 +2500,9 @@ function applyMpState(payload){
   if(payload.winner!=null && !state.winner){
     const winP = state.players.find(p=>p.id===payload.winner);
     if(winP){ state.winner = winP; renderWin(); }
+  }
+  if(payload.soundQueue){
+    payload.soundQueue.forEach(ev=>{ if(ev.netId===mpMyId) playSfxByKind(ev.kind, ev.arg); });
   }
   renderScroll();
   updateSelfLive();
@@ -2499,7 +2538,11 @@ function uiShowDifficultyModal(){
   const unlocked = loadDifficultyUnlocked();
   selectedDifficulty = ['easy','normal','hard'].find(d=>unlocked[d]) || 'easy';
   if(gameMode==='single'){ selectedPlayerCount = 4; selectedCpuSlots = [true,true,true]; }
-  else if(gameMode==='multi' && mpMode==='host'){ selectedPlayerCount = Math.max(selectedPlayerCount, mpRoster.length); }
+  else if(gameMode==='multi' && mpMode==='host'){
+    selectedCpuCount = Math.max(0, Math.min(selectedCpuCount, 4 - mpRoster.length));
+    selectedPlayerCount = mpRoster.length + selectedCpuCount;
+    selectedCpuSlots = [0,1,2].map(i => i < selectedCpuCount);
+  }
   renderDifficultyModal(unlocked);
 }
 let diffModalTab = 'difficulty'; // 'difficulty' または 'players'（マルチプレイ時のみ使用）
@@ -2524,25 +2567,23 @@ function renderDifficultyModal(unlocked){
 
   let playersTabHtml = '';
   if(gameMode==='multi'){
-    let countBtns = '';
-    [2,3,4].forEach(n=>{
-      countBtns += `<button class="diff-btn ${selectedPlayerCount===n?'active':''}" data-action="selectcount" data-count="${n}">${n}人</button>`;
-    });
-    let slotRows = '';
-    for(let i=0;i<selectedPlayerCount-1;i++){
-      const on = selectedCpuSlots[i];
-      slotRows += `<div class="settings-row" style="margin-bottom:6px;">
-        <span>枠${i+2} ／ CPU-${['A','B','C'][i]}</span>
-        <button class="sound-toggle ${on?'':'off'}" data-action="togglecpu" data-slot="${i}">${on?'CPU ON':'空席'}</button>
-      </div>`;
+    const connectedCount = mpMode==='host' ? mpRoster.length : Math.max(1, mpRoster.length);
+    const maxCpu = Math.max(0, 4 - connectedCount);
+    if(selectedCpuCount > maxCpu) selectedCpuCount = maxCpu;
+    let cpuBtns = '';
+    for(let n=0;n<=maxCpu;n++){
+      cpuBtns += `<button class="diff-btn ${selectedCpuCount===n?'active':''}" data-action="selectcpucount" data-cpucount="${n}">${n}人</button>`;
     }
     playersTabHtml = `
-    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:6px;">
-      <span>PLAYERS ／ 参加人数（あなたを含む）</span>
-      <div class="diff-btn-row" style="margin-bottom:0;">${countBtns}</div>
+    <div class="settings-row" style="margin-bottom:10px;">
+      <span>CONNECTED ／ 現在の接続人数</span>
+      <b class="mono">${connectedCount}人</b>
     </div>
-    <div style="margin-top:10px;">${slotRows}</div>
-    <p class="start-desc ja" style="font-size:8.5px;color:var(--sub);margin:2px 0 0;">※ オンライン対戦は準備中です。今は「空席」にした枠はゲームに参加しません。</p>`;
+    <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <span>＋CPUを何人追加しますか？</span>
+      <div class="diff-btn-row" style="margin-bottom:0;">${cpuBtns}</div>
+    </div>
+    <p class="start-desc ja" style="font-size:8.5px;color:var(--sub);margin:8px 0 0;">※ 接続人数＋CPUの合計が、そのままゲームの参加人数になります（最大4人）。</p>`;
   }
 
   const tabBarHtml = gameMode==='multi' ? `
@@ -2573,6 +2614,15 @@ function uiSwitchDiffTab(tab){
 }
 function uiSelectPlayerCount(n){
   selectedPlayerCount = n;
+  sfxClick();
+  renderDifficultyModal(loadDifficultyUnlocked());
+}
+function uiSelectCpuCount(n){
+  selectedCpuCount = n;
+  // 選んだCPU人数を、実際のプレイヤー生成ロジック（selectedPlayerCount / selectedCpuSlots）に反映
+  const connectedCount = Math.max(1, mpRoster.length);
+  selectedPlayerCount = connectedCount + n;
+  selectedCpuSlots = [0,1,2].map(i => i < n);
   sfxClick();
   renderDifficultyModal(loadDifficultyUnlocked());
 }
@@ -2748,7 +2798,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v6.6</div>
+        <div class="version-tag">v7.0</div>
       </div>
     </div>
   `;
