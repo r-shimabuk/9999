@@ -267,8 +267,7 @@ html,body{
 .roll-btn-fill{position:absolute;left:0;top:0;bottom:0;width:100%;background:var(--orange);transition:width .05s linear;z-index:0;}
 .roll-btn.cooldown .roll-btn-fill{display:none;}
 .roll-btn-label{position:relative;z-index:1;}
-.mini-bar{display:inline-block;width:22px;height:6px;border-radius:3px;border:1.5px solid var(--sub);background:transparent;overflow:hidden;position:relative;opacity:0.35;transition:opacity .15s;}
-.mini-bar.active{opacity:1;border-color:var(--orange);}
+.mini-bar{display:inline-block;width:22px;height:11px;border-radius:3px;border:1.5px solid var(--orange);background:transparent;overflow:hidden;position:relative;vertical-align:middle;}
 .mini-bar.active{opacity:1;}
 .mini-bar-fill{position:absolute;top:0;bottom:0;left:-40%;width:40%;background:var(--orange);animation:miniBarSweep 0.5s linear infinite;}
 .mini-bar:not(.active) .mini-bar-fill{animation-play-state:paused;}
@@ -276,7 +275,7 @@ html,body{
 
 .self-name-row{display:flex;align-items:center;gap:6px;}
 .deco-cluster{display:flex;gap:4px;align-items:center;}
-.deco-ring{display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;border-radius:50%;border:1.5px solid var(--sub);flex-shrink:0;}
+.deco-ring{display:inline-flex;align-items:center;justify-content:center;width:11px;height:11px;border-radius:50%;border:1.5px solid var(--sub);flex-shrink:0;vertical-align:middle;}
 .deco-ring .deco-dot{width:4px;height:4px;border-radius:50%;background:var(--sub);}
 .deco-ring.c1{border-color:var(--red);}
 .deco-ring.c1 .deco-dot{background:var(--red);animation:decoBlink 0.6s step-start infinite;}
