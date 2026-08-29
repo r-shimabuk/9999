@@ -1180,7 +1180,16 @@ function triggerAuras(p){
 // fast visual-only loop: mutates existing DOM nodes directly, never rebuilds them
 setInterval(()=>{
   if(!state.running || state.winner || state.paused || state.awaitingFirstRoll) return;
-  if(mpMode==='guest'){ updateSelfLive(); updateOppLive(); return; } // ゲストはホストの状態を表示するだけ
+  if(mpMode==='guest'){
+    // 実際の結果はホストが正だが、回転中の見た目のチラつきはローカルで生成して滑らかに見せる
+    const gnow = Date.now();
+    for(const p of state.players){
+      if(p.rollAnim && p.rollAnim.active && gnow < p.rollAnim.endsAt){
+        p.rollAnim.disp = 1+Math.floor(Math.random()*9);
+      }
+    }
+    updateSelfLive(); updateOppLive(); return;
+  }
   const now = Date.now();
   for(const p of state.players){
     if(p.rollAnim.active){
@@ -1195,6 +1204,7 @@ setInterval(()=>{
   }
   updateSelfLive();
   updateOppLive();
+  broadcastMpState(); // ホストなら高速ループ側でも配信し、体感の滑らかさを上げる
 }, 60);
 
 function triggerChain(type, player){
@@ -2241,7 +2251,7 @@ let mpLastBroadcast = 0;
 let mpPlayerName = 'プレイヤー';
 
 function randomRoomCode(){
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字（0/O, 1/I等）を除外
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // 紛らわしい文字（O, I）を除外。数字は含めずアルファベットのみ
   let s = '';
   for(let i=0;i<4;i++) s += chars[Math.floor(Math.random()*chars.length)];
   return s;
@@ -2256,7 +2266,7 @@ function uiShowMultiplayerConnect(){
     </div>
     <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:6px;margin-top:12px;">
       <span>ROOM CODE ／ 参加する場合はルームコード</span>
-      <input type="text" id="mpCodeInput" maxlength="4" placeholder="例: ABCD" style="padding:8px;border-radius:8px;border:1.5px solid var(--sub);background:var(--bg);color:var(--ink);font-size:16px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-family:'Share Tech Mono',monospace;">
+      <input type="text" id="mpCodeInput" maxlength="4" placeholder="例: ABCD" oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()" style="padding:8px;border-radius:8px;border:1.5px solid var(--sub);background:var(--bg);color:var(--ink);font-size:16px;text-transform:uppercase;letter-spacing:4px;text-align:center;font-family:'Share Tech Mono',monospace;">
     </div>
     <div id="mpConnectError" style="color:var(--red);font-size:10px;margin-top:6px;min-height:14px;"></div>
     <div class="diff-btn-row" style="margin-top:10px;align-items:stretch;">
@@ -2393,7 +2403,7 @@ function uiMpLeave(){
 function broadcastMpState(){
   if(mpMode!=='host' || !mpSocket || mpSocket.readyState!==1) return;
   const now = Date.now();
-  if(now - mpLastBroadcast < 150) return;
+  if(now - mpLastBroadcast < 90) return;
   mpLastBroadcast = now;
   const payload = {
     players: state.players.map(p=>({
@@ -2735,7 +2745,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v6.2</div>
+        <div class="version-tag">v6.4</div>
       </div>
     </div>
   `;
