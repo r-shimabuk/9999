@@ -241,6 +241,7 @@ html,body{
 @keyframes auctionPulseMine{0%{box-shadow:0 0 4px var(--blue);}50%{box-shadow:0 0 16px var(--blue);}100%{box-shadow:0 0 4px var(--blue);}}
 @keyframes auctionPulse{0%{box-shadow:0 0 0 rgba(0,0,0,0);}50%{box-shadow:0 0 8px currentColor;}100%{box-shadow:0 0 0 rgba(0,0,0,0);}}
 .slot .rarity-tag{font-size:7px;letter-spacing:1px;padding:2px 5px;border-radius:3px;display:inline-block;margin-bottom:3px;font-weight:700;border:1.5px solid;background:transparent;}
+.archetype-tag{font-size:7px;letter-spacing:0.5px;font-weight:900;margin-left:5px;}
 .slot .iname{font-size:9.5px;font-weight:700;line-height:1.2;margin-bottom:1px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .item-emoji{display:inline-block;width:11px;height:11px;vertical-align:middle;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;-webkit-mask-position:center;mask-position:center;}
 .slot .idesc{font-size:7.5px;color:var(--sub);line-height:1.2;margin-bottom:0;}
@@ -821,19 +822,24 @@ const ITEMS = [
   {id:35, name:'トリプルダイスパック', desc:'サイコロ+3個（永続・まとめ買い割引大）', price:0, rarity:'legend', type:'addDice3'},
   {id:50, name:'クインタプルダイスパック', desc:'サイコロ+5個（永続・まとめ買い割引特大）', price:0, rarity:'legend', type:'addDice5'},
   {id:70, name:'大清算', desc:'所持アイテムを全部売却し、ステータスを初期値に戻す（所持数に応じて進捗を還元）', price:10, rarity:'legend', type:'sellAll'},
+  {id:71, name:'物量の奥義', desc:'サイコロ+3個・出目+80/個。他の奥義とは排他（1つしか選べない）', price:800, rarity:'legend', type:'capstoneVolume'},
+  {id:72, name:'倍率の奥義', desc:'合計出目×2.5（複利）。他の奥義とは排他（1つしか選べない）', price:800, rarity:'legend', type:'capstoneMultiplier'},
+  {id:73, name:'妨害の奥義', desc:'全トラップの発動確率+25%。他の奥義とは排他（1つしか選べない）', price:800, rarity:'legend', type:'capstoneTrap'},
+  {id:74, name:'経済の奥義', desc:'利息+3%・収集レベル+10。他の奥義とは排他（1つしか選べない）', price:800, rarity:'legend', type:'capstoneEconomy'},
+  {id:75, name:'ギャンブルの奥義', desc:'黄金のダイス級を2個追加。他の奥義とは排他（1つしか選べない）', price:800, rarity:'legend', type:'capstoneGamble'},
   {id:27, name:'倍化の指輪', desc:'合計出目×1.15（複利で重なる・永続、上限なし）', price:220, rarity:'epic', type:'multiplier', amount:0.15},
   {id:36, name:'強化の指輪', desc:'合計出目×1.3（複利で重なる・永続、上限なし）', price:150, rarity:'epic', type:'multiplier', amount:0.3},
   {id:37, name:'神域の指輪', desc:'合計出目×1.6（複利で重なる・永続、上限なし）', price:400, rarity:'legend', type:'multiplier', amount:0.6},
   {id:39, name:'加速の指輪', desc:'合計出目×1.22（複利で重なる・永続、上限なし）', price:100, rarity:'rare', type:'multiplier', amount:0.22},
   {id:40, name:'覚醒の秘宝', desc:'合計出目が一撃で×10（他の倍率と複利で重なる）。超高額', price:2000, rarity:'legend', type:'multiplierBig'},
   // 出目に直接加算するアイテム群（永続・重ね掛け可）
-  {id:48, name:'出目+10', desc:'ロールごとに合計出目+10（永続）', price:9, rarity:'common', type:'flatBonus', amount:10},
-  {id:49, name:'出目+15', desc:'ロールごとに合計出目+15（永続）', price:14, rarity:'common', type:'flatBonus', amount:15},
-  {id:41, name:'出目+25', desc:'ロールごとに合計出目+25（永続）', price:60, rarity:'rare', type:'flatBonus', amount:25},
-  {id:42, name:'出目+50', desc:'ロールごとに合計出目+50（永続）', price:150, rarity:'epic', type:'flatBonus', amount:50},
-  {id:43, name:'出目+100', desc:'ロールごとに合計出目+100（永続）', price:300, rarity:'epic', type:'flatBonus', amount:100},
-  {id:44, name:'固定ダイス100', desc:'出目100の特別なダイスが1個増える感覚（永続、+100）', price:350, rarity:'legend', type:'flatBonus', amount:100},
-  {id:45, name:'固定ダイス500', desc:'出目500の特別なダイスが1個増える感覚（永続、+500）', price:1200, rarity:'legend', type:'flatBonus', amount:500},
+  {id:48, name:'出目+10', desc:'所持しているサイコロ1つ1つに+10（永続・ダイス本数が多いほど爆発的に伸びる）', price:9, rarity:'common', type:'flatBonus', amount:10},
+  {id:49, name:'出目+15', desc:'所持しているサイコロ1つ1つに+15（永続・ダイス本数が多いほど爆発的に伸びる）', price:14, rarity:'common', type:'flatBonus', amount:15},
+  {id:41, name:'出目+25', desc:'所持しているサイコロ1つ1つに+25（永続・ダイス本数が多いほど爆発的に伸びる）', price:60, rarity:'rare', type:'flatBonus', amount:25},
+  {id:42, name:'出目+50', desc:'所持しているサイコロ1つ1つに+50（永続・ダイス本数が多いほど爆発的に伸びる）', price:150, rarity:'epic', type:'flatBonus', amount:50},
+  {id:43, name:'出目+100', desc:'所持しているサイコロ1つ1つに+100（永続・ダイス本数が多いほど爆発的に伸びる）', price:300, rarity:'epic', type:'flatBonus', amount:100},
+  {id:44, name:'固定ダイス100', desc:'所持しているサイコロ1つ1つに+100（永続・ダイス本数が多いほど爆発的に伸びる）', price:350, rarity:'legend', type:'flatBonus', amount:100},
+  {id:45, name:'固定ダイス500', desc:'所持しているサイコロ1つ1つに+500（永続・ダイス本数が多いほど爆発的に伸びる）', price:1200, rarity:'legend', type:'flatBonus', amount:500},
   // 出目を一撃で○倍にする秘薬（永続・重ね掛け可）
   {id:46, name:'倍化の秘薬', desc:'合計出目が一撃で×2.5（他の倍率と複利で重なる）', price:500, rarity:'legend', type:'multiplierJump', amount:1.5},
   {id:47, name:'3倍の秘薬', desc:'合計出目が一撃で×4（他の倍率と複利で重なる）', price:1000, rarity:'legend', type:'multiplierJump', amount:3.0},
@@ -842,9 +848,9 @@ const ITEMS = [
   {id:55, name:'蒼の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA2'},
   {id:56, name:'金の欠片', desc:'単体では無力。紅・蒼・金の3色すべて揃うと合計出目が実質10倍に（永続）', price:90, rarity:'epic', type:'comboPieceA3'},
   // 特殊ダイス（面ごとに出目が異なる。価格が高いほど平均値も高い）
-  {id:57, name:'怪しいダイス', desc:'特殊ダイス追加。出目-5か+15（平均+1.7/個、永続）', price:15, rarity:'common', type:'customDieShady'},
-  {id:58, name:'賭けダイス', desc:'特殊ダイス追加。出目-10か+50（平均+20/個、永続）', price:120, rarity:'epic', type:'customDieGamble'},
-  {id:59, name:'黄金のダイス', desc:'特殊ダイス追加。出目+30〜+80、マイナスなし（平均+50/個、永続）', price:600, rarity:'legend', type:'customDieGolden'},
+  {id:57, name:'怪しいダイス', desc:'特殊ダイス追加。出目-8か+25（平均+7.5/個、永続）', price:15, rarity:'common', type:'customDieShady'},
+  {id:58, name:'賭けダイス', desc:'特殊ダイス追加。出目-20か+90（平均+35/個、永続）', price:120, rarity:'epic', type:'customDieGamble'},
+  {id:59, name:'黄金のダイス', desc:'特殊ダイス追加。出目+40〜+130、マイナスなし（平均+75/個、永続）', price:600, rarity:'legend', type:'customDieGolden'},
   {id:38, name:'収集の力', desc:'所持アイテム総数に応じて出目が増加（永続・重ね掛け可、ガラクタも数に含む）', price:60, rarity:'epic', type:'collectorBonus'},
   {id:5, name:'大きい目', desc:'最大出目+2（永続・重ね掛け可）', price:40, rarity:'rare', type:'maxUp'},
   {id:51, name:'超大きい目', desc:'最大出目+4（永続・重ね掛け可）', price:90, rarity:'epic', type:'maxUp2'},
@@ -928,6 +934,7 @@ function newPlayer(id, name, isHuman, personality, netId){
     id, name, isHuman, personality: personality||null,
     netId: netId!=null?netId:null, // マルチプレイ：この枠を操作する接続先のID（自分の場合はnull＝ローカル操作）
     progress:0,
+    archetypeCounts:{}, capstoneArchetype:null, // 系統ごとの所持数・選んだ奥義（排他）
     diceCount:1, maxBonus:0, minBonus:0,
     effects:{},
     bubble:null, bubbleUntil:0,
@@ -1172,7 +1179,7 @@ function finalizeRoll(p){
   }
   const collectorBonus = (p.collectorLevel||0) * Math.floor((p.totalItemsOwned||0)/2);
   rawTotal += collectorBonus;
-  rawTotal += (p.flatRollBonus||0);
+  rawTotal += (p.flatRollBonus||0) * (p.diceCount||1); // サイコロ1つ1つに乗る（ダイス本数が多いほど爆発的に伸びる）
   const comboMult = 1 + Math.min(p.comboCount||0, 80) * 0.05; // 振り続けるほど一時的に伸びる（最大+4.0倍＝合計5.0倍）。オークション参加でリセット
   const checkpointMult = checkpointBuffActive(p) ? 1.35 : 1; // 誰かが旗を取ると、その人以外に10秒間+35%
   const total = Math.round(rawTotal * (p.multiplierFactor||1) * comboMult * checkpointMult);
@@ -1234,10 +1241,12 @@ function popRoll(total, combo){
   setTimeout(()=>{ span.remove(); }, 780);
 }
 
-function flagIfLeaderHit(t, now){
+function flagIfLeaderHit(p, t, now){
   if(getRank(t)===1){
     t.leaderHitFlashUntil = now + 1800;
-    addLog(`⚠️ 1位の${t.name}が妨害を受けた！`, 'atk');
+    const bonus = Math.max(3, Math.round(t.progress * 0.05)); // 1位を狙い撃ちすると攻撃側にもボーナス
+    p.progress = Math.min(GOAL, p.progress + bonus);
+    addLog(`⚠️ 1位の${t.name}が妨害を受けた！（${p.name}に+${bonus}のボーナス）`, 'atk');
   }
 }
 function triggerAuras(p){
@@ -1261,19 +1270,19 @@ function triggerAuras(p){
     const t = pick();
     t.effects.maxDownUntil = now + 12000*(1-(t.debuffResist||0));
     t.effects.maxDownAmount = 3; t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}の目潰しトラップが${t.name}を襲った！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
+    addLog(`${p.name}の目潰しトラップが${t.name}を襲った！`, 'atk'); fired = true; flagIfLeaderHit(p, t, now);
   }
   if(p.auraProc.freeze && Math.random()<p.auraProc.freeze*trapMult){
     const t = pick();
     t.effects.rollDisabledUntil = now + 3200*(1-(t.debuffResist||0));
     t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}のゲージ凍結トラップが${t.name}を止めた！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
+    addLog(`${p.name}のゲージ凍結トラップが${t.name}を止めた！`, 'atk'); fired = true; flagIfLeaderHit(p, t, now);
   }
   if(p.auraProc.priceUp && Math.random()<p.auraProc.priceUp*trapMult){
     const t = pick();
     t.effects.priceUpUntil = now + 15000*(1-(t.debuffResist||0));
     t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}の割高トラップが${t.name}を直撃！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
+    addLog(`${p.name}の割高トラップが${t.name}を直撃！`, 'atk'); fired = true; flagIfLeaderHit(p, t, now);
   }
   if(p.auraProc.shelfLock && Math.random()<p.auraProc.shelfLock*trapMult){
     const candidates = [0,1,2].filter(i=>!state.shop.auctions[i]);
@@ -1291,14 +1300,14 @@ function triggerAuras(p){
       t.progress = Math.max(0, t.progress - amount);
       p.progress = Math.min(GOAL, p.progress + amount);
       t.lastAttackerBy = p.name;
-      addLog(`${p.name}のコイン強奪トラップが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
+      addLog(`${p.name}のコイン強奪トラップが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true; flagIfLeaderHit(p, t, now);
     }
   }
   if(p.auraProc.fakeBubble && Math.random()<p.auraProc.fakeBubble*trapMult){
     const t = pick();
     if(t.effects.immuneFakePermanent){ /* 被弾側の防御は自分のアクションではないため無音 */ }
     else {
-      t.bubble = '？？？'; t.bubbleUntil = now+4000; t.lastAttackerBy = p.name; compensate(t); fired = true; flagIfLeaderHit(t, now);
+      t.bubble = '？？？'; t.bubbleUntil = now+4000; t.lastAttackerBy = p.name; compensate(t); fired = true; flagIfLeaderHit(p, t, now);
     }
   }
   if(fired) humanSfx(p,'aura');
@@ -1414,6 +1423,12 @@ function priceFor(p, item){
     const leader = getLeader();
     if(!(state.chain.excludeLeader && leader.id===p.id && countAtMax()<=1)) price = Math.round(price*0.85);
   }
+  // 同じ系統（物量・倍率・妨害・経済・ギャンブル）を多く持つほど、その系統の次の一品が値上がりする
+  const arch = itemArchetype(item);
+  if(arch!=='junk' && arch!=='reset' && arch!=='info'){
+    const archCnt = (p.archetypeCounts && p.archetypeCounts[arch]) || 0;
+    price = Math.round(price * Math.pow(1.15, archCnt));
+  }
   return Math.max(0, price);
 }
 
@@ -1425,6 +1440,11 @@ function startAuction(p, slotIdx){
   if(state.winner || state.paused) return;
   const item = state.shop.slots[slotIdx];
   if(!item || state.shop.lockedUntil[slotIdx] > Date.now() || state.shop.auctions[slotIdx]) return;
+  if(CAPSTONE_ARCHETYPE[item.type] && p.capstoneArchetype && p.capstoneArchetype !== CAPSTONE_ARCHETYPE[item.type]){
+    addLog(`${p.name} は既に「${ARCHETYPE_LABEL[p.capstoneArchetype]}の奥義」を選んでいるため、この奥義は入札できない。`, 'atk');
+    humanSfx(p,'fail');
+    return;
+  }
   const basePrice = priceFor(p, item);
   const price = Math.round(basePrice * MULT_SEQ[0]);
   if(p.progress < price) { addLog(`${p.name} は進捗が足りず入札できなかった。`); humanSfx(p,'fail'); return; }
@@ -1463,6 +1483,9 @@ function finalizePurchase(slotIdx, bidder, item, price, logSuffix){
   state.shop.slots[slotIdx] = null;
   bidder.purchaseCount[item.type] = (bidder.purchaseCount[item.type]||0) + 1;
   bidder.totalItemsOwned = (bidder.totalItemsOwned||0) + 1;
+  if(!bidder.archetypeCounts) bidder.archetypeCounts = {};
+  const arch = itemArchetype(item);
+  bidder.archetypeCounts[arch] = (bidder.archetypeCounts[arch]||0) + 1;
   bidder.inventory.push({name:item.name, rarity:item.rarity, desc:item.desc, type:item.type});
   if(bidder.inventory.length>50) bidder.inventory.shift();
   if(item.type==='junk'){
@@ -1519,6 +1542,11 @@ function feverBuy(p, slotIdx){
   if(!state.feverTime || state.winner || state.paused) return;
   const item = state.shop.slots[slotIdx];
   if(!item) return;
+  if(CAPSTONE_ARCHETYPE[item.type] && p.capstoneArchetype && p.capstoneArchetype !== CAPSTONE_ARCHETYPE[item.type]){
+    addLog(`${p.name} は既に「${ARCHETYPE_LABEL[p.capstoneArchetype]}の奥義」を選んでいるため、この奥義は購入できない。`, 'atk');
+    humanSfx(p,'fail');
+    return;
+  }
   const price = feverBuyPrice(p, slotIdx);
   if(p.progress < price){ if(p.isHuman){ addLog(`${p.name} は進捗が足りずフィーバー購入できなかった。`); sfxFail(); } return; }
   p.progress -= price;
@@ -1552,9 +1580,28 @@ function applyEffect(p, item){
       p.seeCoinsPermanent = false; p.seeRestockPermanent = false; p.previewPermanent = false;
       p.scoutPermanent = false; p.revealAttackerPermanent = false;
       p.immuneStealPermanent = false; p.immuneFakePermanent = false;
+      p.archetypeCounts = {}; p.capstoneArchetype = null; // 系統税と奥義の選択もリセットされる
       addLog(`${p.name} が全アイテムを売却し、ステータスをリセットした！（+${refund}）`, 'atk');
       break;
     }
+    case 'capstoneVolume': p.diceCount += 3; p.flatRollBonus = (p.flatRollBonus||0) + 80; p.capstoneArchetype = 'volume'; break;
+    case 'capstoneMultiplier': p.multiplierFactor = (p.multiplierFactor||1) * 2.5; p.capstoneArchetype = 'multiplier'; break;
+    case 'capstoneTrap':
+      ['maxDown','freeze','priceUp','shelfLock','coinSteal','fakeBubble'].forEach(k=>{
+        p.auraProc[k] = Math.min(0.95, (p.auraProc[k]||0) + 0.25);
+      });
+      p.capstoneArchetype = 'trap';
+      break;
+    case 'capstoneEconomy':
+      p.interestRate = Math.min(0.09, (p.interestRate||0) + 0.03);
+      p.collectorLevel = (p.collectorLevel||0) + 10;
+      p.capstoneArchetype = 'economy';
+      break;
+    case 'capstoneGamble':
+      p.customDice.push([40,50,60,70,100,130]);
+      p.customDice.push([40,50,60,70,100,130]);
+      p.capstoneArchetype = 'gamble';
+      break;
     case 'addDice': p.diceCount += 1; break;
     case 'maxUp': p.maxBonus += 2; break;
     case 'maxUp2': p.maxBonus += 4; break;
@@ -1583,7 +1630,7 @@ function applyEffect(p, item){
     case 'auraShelfLock': p.auraProc.shelfLock = Math.min(0.8, (p.auraProc.shelfLock||0) + 0.18); break;
     case 'auraCoinSteal': p.auraProc.coinSteal = Math.min(0.9, (p.auraProc.coinSteal||0) + 0.2); break;
     case 'auraFakeBubble': p.auraProc.fakeBubble = Math.min(0.95, (p.auraProc.fakeBubble||0) + 0.22); break;
-    case 'interest': p.interestRate = Math.min(0.03, (p.interestRate||0) + 0.005); break;
+    case 'interest': p.interestRate = Math.min(0.06, (p.interestRate||0) + 0.012); break;
     case 'insurance': p.insuranceBonus = (p.insuranceBonus||0) + 5; break;
     case 'scoutPerm': p.effects.scoutPermanent = true; break;
     case 'multiplier': p.multiplierFactor = (p.multiplierFactor||1) * (1 + (item.amount||0.1)); break; // 複利で重なる（上限なし）
@@ -1593,13 +1640,13 @@ function applyEffect(p, item){
     case 'comboPieceA1': p.comboPieces.a1 = true; checkComboSetA(p); break;
     case 'comboPieceA2': p.comboPieces.a2 = true; checkComboSetA(p); break;
     case 'comboPieceA3': p.comboPieces.a3 = true; checkComboSetA(p); break;
-    case 'customDieShady': p.customDice.push([-5,-5,-5,-5,15,15]); break;
-    case 'customDieGamble': p.customDice.push([-10,-10,-10,50,50,50]); break;
-    case 'customDieGolden': p.customDice.push([30,30,40,40,80,80]); break;
+    case 'customDieShady': p.customDice.push([-8,-8,-8,25,25,25]); break;
+    case 'customDieGamble': p.customDice.push([-20,-20,-20,90,90,90]); break;
+    case 'customDieGolden': p.customDice.push([40,50,60,70,100,130]); break;
     case 'addDice2': p.diceCount += 2; break;
     case 'addDice3': p.diceCount += 3; break;
     case 'addDice5': p.diceCount += 5; break;
-    case 'collectorBonus': p.collectorLevel = Math.min(20, (p.collectorLevel||0) + 1); break;
+    case 'collectorBonus': p.collectorLevel = Math.min(35, (p.collectorLevel||0) + 2); break;
   }
 }
 
@@ -1664,8 +1711,30 @@ setInterval(()=>{
 
 // アイテムの系統分類（個性ごとの好みに使う）
 // アイテムの種類ごとの絵文字アイコン
+// ---------- アイテムの系統（アーキタイプ）：プレイヤーに見える分類 ----------
+const ARCHETYPE_LABEL = { volume:'物量', multiplier:'倍率', trap:'妨害', gamble:'ギャンブル', economy:'経済', info:'情報', junk:'ハズレ', reset:'リセット' };
+const ARCHETYPE_COLOR = { volume:'var(--blue)', multiplier:'var(--purple)', trap:'var(--red)', gamble:'var(--orange)', economy:'var(--green)', info:'var(--yellow)', junk:'var(--sub)', reset:'var(--ink)' };
+const ARCHETYPE_MAP = {
+  addDice:'volume', addDice2:'volume', addDice3:'volume', addDice5:'volume', flatBonus:'volume',
+  maxUp:'volume', maxUp2:'volume', maxUp4:'volume', minUp:'volume', minUp2:'volume', minUp3:'volume',
+  shiftRange:'volume', shiftRange2:'volume',
+  multiplier:'multiplier', multiplierBig:'multiplier', multiplierJump:'multiplier', collectorBonus:'multiplier',
+  comboPieceA1:'multiplier', comboPieceA2:'multiplier', comboPieceA3:'multiplier',
+  auraMaxDown:'trap', auraFreeze:'trap', auraPriceUp:'trap', auraShelfLock:'trap', auraCoinSteal:'trap', auraFakeBubble:'trap',
+  customDieShady:'gamble', customDieGamble:'gamble', customDieGolden:'gamble',
+  interest:'economy', priceDiscount:'economy', econResist:'economy', debuffResist:'economy',
+  immuneStealPerm:'economy', immuneFakePerm:'economy', chainBonus:'economy', coinBoost:'economy',
+  spinReduce:'economy', spinReduce2:'economy', insurance:'economy',
+  previewPerm:'info', seeRestockPerm:'info', seeCoinsPerm:'info', scoutPerm:'info', revealAttackerPerm:'info',
+  junk:'junk', sellAll:'reset',
+  capstoneVolume:'volume', capstoneMultiplier:'multiplier', capstoneTrap:'trap', capstoneEconomy:'economy', capstoneGamble:'gamble',
+};
+function itemArchetype(item){ return ARCHETYPE_MAP[item.type] || 'other'; }
+const CAPSTONE_ARCHETYPE = { capstoneVolume:'volume', capstoneMultiplier:'multiplier', capstoneTrap:'trap', capstoneEconomy:'economy', capstoneGamble:'gamble' };
+
 const ITEM_EMOJI = {
   sellAll:'♻️',
+  capstoneVolume:'🎲', capstoneMultiplier:'✨', capstoneTrap:'⚔️', capstoneEconomy:'🏦', capstoneGamble:'🎰',
   addDice:'🎲', addDice2:'🎲', addDice3:'🎲', addDice5:'🎲',
   flatBonus:'➕', multiplier:'✨', multiplierBig:'💫', multiplierJump:'🚀',
   spinReduce:'⏱️', spinReduce2:'⚡',
@@ -1943,10 +2012,10 @@ function renderScroll(){
           btnHtml = `<button disabled>MAX</button>`;
         }
         html += `<div class="slot auction ${isMe?'mine':''} ${feverActive?'fever-slot':''}" style="border-color:${isMe?'var(--blue)':rar.color}">
-          <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
+          <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span><span class="archetype-tag" style="color:${ARCHETYPE_COLOR[itemArchetype(item)]||'var(--sub)'}">${ARCHETYPE_LABEL[itemArchetype(item)]||''}</span>
           <div class="iname">${itemEmojiHtml(item, rar.color)} ${item.name}</div>
           <div class="idesc clamp2">${item.desc}</div>
-          <div class="status-line" style="color:${isMe?'var(--blue)':rar.color};font-weight:700;">${isMe?'あなたが入札中！':'BIDDING・残り'+remain+'秒'}</div></div>
+          <div class="status-line" style="color:${isMe?'var(--blue)':rar.color};font-weight:700;">${isMe?'あなたが入札中！':`${bidder?bidder.name:'？'}が入札中・残り${remain}秒`}</div></div>
           <div>${priceBlockHtml}
           ${btnHtml}
           ${feverBtn}</div>
@@ -1955,7 +2024,7 @@ function renderScroll(){
         const price = Math.round(priceFor(human, item) * MULT_SEQ[0]);
         const canBuy = human.progress>=price;
         html += `<div class="slot ${feverActive?'fever-slot':''} ${canBuy?'slot-tappable':''}" style="border-color:${rar.color}" ${canBuy?`data-action="buy" data-slot="${i}"`:''}>
-          <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span>
+          <div><span class="rarity-tag" style="border-color:${rar.color};color:${rar.color}">${rar.label}</span><span class="archetype-tag" style="color:${ARCHETYPE_COLOR[itemArchetype(item)]||'var(--sub)'}">${ARCHETYPE_LABEL[itemArchetype(item)]||''}</span>
           <div class="iname">${itemEmojiHtml(item, rar.color)} ${item.name}</div>
           <div class="idesc clamp2">${item.desc}</div>
           <div class="status-line"></div></div>
@@ -2109,7 +2178,8 @@ function showInvTip(el, idx){
   const item = human.inventory[idx];
   const tip = document.getElementById('invTip');
   if(!item || !tip) return;
-  tip.textContent = item.desc;
+  const arch = itemArchetype(item);
+  tip.textContent = `【${ARCHETYPE_LABEL[arch]||''}】${item.desc}`;
   const elRect = el.getBoundingClientRect();
   tip.style.left = Math.max(4, elRect.left) + 'px';
   tip.style.top = (elRect.top - 8) + 'px';
@@ -2149,7 +2219,7 @@ function renderBadges(p, now){
   if(p.effects.immuneFakePermanent) b+=`<span class="badge buff">目視回避</span>`;
   if(p.chainBonusSec>0) b+=`<span class="badge">CHAIN+${p.chainBonusSec}秒</span>`;
   if(p.multiplierFactor>1) b+=`<span class="badge">出目×${p.multiplierFactor.toFixed(2)}</span>`;
-  if(p.flatRollBonus>0) b+=`<span class="badge">出目+${p.flatRollBonus}/回</span>`;
+  if(p.flatRollBonus>0) b+=`<span class="badge">出目+${p.flatRollBonus}/個（計+${p.flatRollBonus*(p.diceCount||1)}）</span>`;
   if(p.customDice && p.customDice.length>0) b+=`<span class="badge">特殊ダイス×${p.customDice.length}</span>`;
   if(p.comboPieces && (p.comboPieces.a1||p.comboPieces.a2||p.comboPieces.a3) && !p.effects.comboSetAComplete){
     const got = ['a1','a2','a3'].filter(k=>p.comboPieces[k]).length;
@@ -2165,6 +2235,7 @@ function renderBadges(p, now){
     b+=`<span class="badge combo-badge">COMBO</span>`;
   }
   if(p.interestRate>0) b+=`<span class="badge">利息${(p.interestRate*100).toFixed(1)}%</span>`;
+  if(p.capstoneArchetype) b+=`<span class="badge" style="border-color:${ARCHETYPE_COLOR[p.capstoneArchetype]};color:${ARCHETYPE_COLOR[p.capstoneArchetype]}">奥義：${ARCHETYPE_LABEL[p.capstoneArchetype]}</span>`;
   if(p.insuranceBonus>0) b+=`<span class="badge buff">保険+${p.insuranceBonus}</span>`;
   if(p.effects.scoutPermanent) b+=`<span class="badge buff">偵察</span>`;
   if(p.auraProc){
@@ -2255,6 +2326,7 @@ function uiOpenSettings(){
       : mpMode==='guest' ? 'GUEST ／ マルチプレイ中は一時停止できません（ホストの進行は止まりません）'
       : 'PAUSED ／ ゲームは一時停止中です'
     }</div>
+    ${mpRoomCode ? `<div class="settings-row" style="margin-bottom:10px;"><span>ROOM CODE ／ ルームコード</span><b class="mono" style="letter-spacing:3px;color:var(--purple);font-size:14px;">${mpRoomCode}</b></div>` : ''}
     <div class="settings-row">
       <span>効果音</span>
       <button class="sound-toggle ${soundSettings.on?'':'off'}" id="soundToggleBtn" onclick="uiToggleSound()">${soundSettings.on?'ON':'OFF'}</button>
@@ -2313,6 +2385,18 @@ function showConfirmModal(message, onConfirm){
   </div></div>`;
   document.getElementById('app').insertAdjacentHTML('beforeend', html);
 }
+// キャンセルの無い、ボタン1つだけの通知モーダル（強制的に選ばせたい時用）
+function showAlertModal(title, message, onOk){
+  const old = document.getElementById('confirmOverlay');
+  if(old) old.remove();
+  __confirmCallback = onOk;
+  const html = `<div class="overlay" id="confirmOverlay"><div class="settings-modal" style="border-color:var(--red);">
+    <h3 style="color:var(--red);">${title}</h3>
+    <p class="start-desc ja" style="font-size:12px;line-height:1.7;margin:10px 0 16px;">${message}</p>
+    <button class="start-btn small" data-action="confirmok" style="margin-top:4px;border-color:var(--red);color:var(--red);">OK</button>
+  </div></div>`;
+  document.getElementById('app').insertAdjacentHTML('beforeend', html);
+}
 function uiConfirmCancel(){
   sfxClick();
   __confirmCallback = null;
@@ -2363,6 +2447,8 @@ function uiOpenHowTo(){
       ・棚ロック：棚を1枠ロックする<br>
       ・コイン強奪：相手のコインを奪う<br>
       ・フェイク：偽の表示を出すだけ（実害なし）</p></div>
+      <div class="howto-sec"><b>ARCHETYPE ／ アイテムの系統</b><p>アイテムには「物量・倍率・妨害・ギャンブル・経済」の系統があり、ショップカードに色分けして表示される。同じ系統を持てば持つほど、その系統の次の一品は値上がりしていく（1個ごとに+15%）。広く浅く買うか、一点特化するかの駆け引きが生まれる。</p></div>
+      <div class="howto-sec"><b>CAPSTONE ／ 奥義</b><p>レジェンド級の中には、系統ごとの「奥義」が存在する（物量・倍率・妨害・経済・ギャンブル、各1種）。どれか1つを買うと強力な効果を得られるが、他の奥義とは一生涯にわたって排他（1ゲーム中1つしか選べない）。「大清算」を使うと選び直せる。</p></div>
       <div class="howto-sec"><b>COMBO ／ コンボ</b><p>ショップに寄らず振り続けると「COMBO」が積み上がり、出目に一時的な倍率がかかる。ただし入札・競り上げに参加するとその場でリセットされる。「振り続ける」か「買いに行く」かの駆け引き。</p></div>
       <div class="howto-sec"><b>CHAIN ／ チェイン</b><p>
       ・幸運チェイン：誰かが全体最高出目を更新すると発動。下位のプレイヤーほど強力で、1位がゴールに近いほど全体の効果も強まる<br>
@@ -2660,6 +2746,18 @@ setInterval(()=>{
 }, 200);
 
 // ---------- ホスト：ゲストから届いた操作を実行 ----------
+// ゲスト：ホストからの通信が長らく途絶えたら通知してスタート画面に戻す
+const MP_TIMEOUT_MS = 8000;
+let mpTimeoutNotified = false;
+setInterval(()=>{
+  if(mpMode!=='guest' || !mpLastStateReceivedAt) return;
+  if(mpTimeoutNotified) return;
+  if(Date.now() - mpLastStateReceivedAt > MP_TIMEOUT_MS){
+    mpTimeoutNotified = true;
+    showAlertModal('CONNECTION LOST ／ 通信切断', 'ホストとの通信が途絶えました。スタート画面に戻ります。', ()=>{ uiReset(); });
+  }
+}, 2000);
+
 function handleHostAction(fromId, payload){
   if(!payload) return;
   const p = state.players.find(pl=>pl.netId===fromId);
@@ -2672,8 +2770,10 @@ function handleHostAction(fromId, payload){
 
 // ---------- ゲスト：ホストから届いた状態を反映 ----------
 let mpGuestSkeletonBuilt = false;
+let mpLastStateReceivedAt = 0;
 function applyMpState(payload){
   if(mpMode!=='guest') return;
+  mpLastStateReceivedAt = Date.now();
   const selfEntry = payload.players[mpMyPlayerIndex];
   if(!selfEntry) return;
   const others = payload.players.filter((_,i)=>i!==mpMyPlayerIndex);
@@ -2993,7 +3093,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v8.4</div>
+        <div class="version-tag">v9.0</div>
       </div>
     </div>
   `;
