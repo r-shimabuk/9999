@@ -132,6 +132,8 @@ html,body{
 .opp-grid{display:flex;gap:6px;}
 .opp-card{flex:1;background:transparent;border:1.5px solid var(--role-opp);border-radius:7px;padding:2px;position:relative;min-width:0;}
 .opp-disconnected-overlay{position:absolute;inset:0;background:rgba(90,90,100,0.88);color:#fff;z-index:3;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:10px;font-weight:900;border-radius:6px;padding:4px;line-height:1.5;}
+.leader-hit-flash{animation:leaderHitFlash 0.3s ease-in-out 5;}
+@keyframes leaderHitFlash{0%,100%{box-shadow:none;}50%{box-shadow:0 0 0 4px rgba(255,59,59,0.75) inset;}}
 .opp-card.leader{border-width:2.5px;}
 .opp-name{font-size:9px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700;}
 .opp-personality{font-size:7px;color:var(--sub);margin-bottom:3px;}
@@ -1227,6 +1229,12 @@ function popRoll(total, combo){
   setTimeout(()=>{ span.remove(); }, 780);
 }
 
+function flagIfLeaderHit(t, now){
+  if(getRank(t)===1){
+    t.leaderHitFlashUntil = now + 1800;
+    addLog(`⚠️ 1位の${t.name}が妨害を受けた！`, 'atk');
+  }
+}
 function triggerAuras(p){
   if(!p.auraProc) return;
   const others = state.players.filter(x=>x.id!==p.id);
@@ -1248,19 +1256,19 @@ function triggerAuras(p){
     const t = pick();
     t.effects.maxDownUntil = now + 12000*(1-(t.debuffResist||0));
     t.effects.maxDownAmount = 3; t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}の目潰しトラップが${t.name}を襲った！`, 'atk'); fired = true;
+    addLog(`${p.name}の目潰しトラップが${t.name}を襲った！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
   }
   if(p.auraProc.freeze && Math.random()<p.auraProc.freeze*trapMult){
     const t = pick();
     t.effects.rollDisabledUntil = now + 3200*(1-(t.debuffResist||0));
     t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}のゲージ凍結トラップが${t.name}を止めた！`, 'atk'); fired = true;
+    addLog(`${p.name}のゲージ凍結トラップが${t.name}を止めた！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
   }
   if(p.auraProc.priceUp && Math.random()<p.auraProc.priceUp*trapMult){
     const t = pick();
     t.effects.priceUpUntil = now + 15000*(1-(t.debuffResist||0));
     t.lastAttackerBy = p.name; compensate(t);
-    addLog(`${p.name}の割高トラップが${t.name}を直撃！`, 'atk'); fired = true;
+    addLog(`${p.name}の割高トラップが${t.name}を直撃！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
   }
   if(p.auraProc.shelfLock && Math.random()<p.auraProc.shelfLock*trapMult){
     const candidates = [0,1,2].filter(i=>!state.shop.auctions[i]);
@@ -1278,14 +1286,14 @@ function triggerAuras(p){
       t.progress = Math.max(0, t.progress - amount);
       p.progress = Math.min(GOAL, p.progress + amount);
       t.lastAttackerBy = p.name;
-      addLog(`${p.name}のコイン強奪トラップが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true;
+      addLog(`${p.name}のコイン強奪トラップが${t.name}から${amount}コイン奪った！`, 'atk'); fired = true; flagIfLeaderHit(t, now);
     }
   }
   if(p.auraProc.fakeBubble && Math.random()<p.auraProc.fakeBubble*trapMult){
     const t = pick();
     if(t.effects.immuneFakePermanent){ /* 被弾側の防御は自分のアクションではないため無音 */ }
     else {
-      t.bubble = '？？？'; t.bubbleUntil = now+4000; t.lastAttackerBy = p.name; compensate(t); fired = true;
+      t.bubble = '？？？'; t.bubbleUntil = now+4000; t.lastAttackerBy = p.name; compensate(t); fired = true; flagIfLeaderHit(t, now);
     }
   }
   if(fired) humanSfx(p,'aura');
@@ -1844,7 +1852,7 @@ function renderScroll(){
     let auraTotal = 0;
     if(human.effects.scoutPermanent && p.auraProc){ auraTotal = Object.values(p.auraProc).reduce((s,v)=>s+v,0); }
     const itemDots = (p.inventory||[]).slice(-14).map(it=>`<span class="item-dot" style="background:${RARITY[it.rarity].color}"></span>`).join('');
-    html += `<div class="opp-card ${isLeader?'leader':''}" style="border-color:${oc}">
+    html += `<div class="opp-card ${isLeader?'leader':''} ${p.leaderHitFlashUntil && p.leaderHitFlashUntil>now ? 'leader-hit-flash':''}" style="border-color:${oc}">
       ${p.disconnected ? `<div class="opp-disconnected-overlay">退出しました<br><span style="font-size:8px;font-weight:400;">同じ名前で再接続を待っています</span></div>` : ''}
       <div class="rank-badge" style="border-color:${oc};color:${oc}">${rank}位</div>
       ${p.bubble && now<p.bubbleUntil ? `<div class="bubble">${p.bubble}</div>` : ''}
@@ -1953,6 +1961,11 @@ function updateSelfLive(){
   const leader = getLeader();
   const spinning = human.rollAnim.active;
   const frozen = human.effects.rollDisabledUntil>now;
+  const selfPanelEl = document.getElementById('selfPanel');
+  if(selfPanelEl){
+    const flashing = human.leaderHitFlashUntil && human.leaderHitFlashUntil>now;
+    selfPanelEl.classList.toggle('leader-hit-flash', !!flashing);
+  }
   if(human.lastRollTotal!=null && human.lastRollTotal !== lastSeenRollTotal){
     lastSeenRollTotal = human.lastRollTotal;
     triggerBigRollFlash(human.lastRollTotal);
@@ -2960,7 +2973,7 @@ function renderStartScreen(){
           <button class="start-btn small" onclick="uiShowModeSelect()">NEW GAME</button>
           ${saved ? `<button class="start-btn small" onclick="uiResume()">RETRY</button>` : ''}
         </div>
-        <div class="version-tag">v8.1</div>
+        <div class="version-tag">v8.2</div>
       </div>
     </div>
   `;
